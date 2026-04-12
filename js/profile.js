@@ -85,4 +85,13 @@ document.addEventListener('DOMContentLoaded', function () {
             window.location.href = 'index.html';
         });
     }
+
+    // --- Logout Handle ---
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            // Optional: clear session/auth tokens here
+            window.location.href = 'index.html';
+        });
+    }
 });

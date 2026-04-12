@@ -1,96 +1,152 @@
+/* ═══════════════════════════════════════════════════════════════
+   FitPulse — Fitness Tracker Logic
+   High-Contrast Lime & Black Edition
+   ═══════════════════════════════════════════════════════════════ */
+
+'use strict';
+
 document.addEventListener('DOMContentLoaded', function () {
-    const logsTableBody = document.getElementById('logsTableBody');
+    const activityFeed = document.getElementById('activityFeed');
     const addLogForm = document.getElementById('addLogForm');
     const activityTypeSelect = document.getElementById('activityType');
     const stepsField = document.getElementById('stepsField');
+    
+    // Modal Elements
+    const addLogModal = document.getElementById('addLogModal');
+    const openAddLogModal = document.getElementById('openAddLogModal');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
 
-    // Initial dummy data if storage is empty
+    // Initial dummy data
     const dummyLogs = [
-        { id: 1, date: '2024-03-12', time: '18:30', name: 'Evening Run', type: 'Workout', duration: 45, steps: 8240 },
-        { id: 2, date: '2024-03-10', time: '10:00', name: 'Strength Training', type: 'Workout', duration: 60, steps: 1200 },
-        { id: 3, date: '2024-03-09', time: '07:15', name: 'Morning Walk', type: 'Steps', duration: 30, steps: 4500 },
-        { id: 4, date: '2024-03-07', time: '16:45', name: 'Cycling', type: 'Workout', duration: 75, steps: '--' },
-        { id: 5, date: '2024-03-05', time: '09:00', name: 'Yoga Session', type: 'Other', duration: 35, steps: 300 }
+        { id: 1, date: '2024-03-12', time: '18:30', name: 'Evening Run', type: 'Workout', duration: 45, steps: 8240, notes: 'Feeling strong. Pushed the last 1km.' },
+        { id: 2, date: '2024-03-10', time: '10:00', name: 'Strength Training', type: 'Workout', duration: 60, steps: 1200, notes: 'New PR on bench press!' },
+        { id: 3, date: '2024-03-09', time: '07:15', name: 'Morning Walk', type: 'Steps', duration: 30, steps: 4500, notes: 'Crisp morning air.' }
     ];
 
-    // Initialize logs from localStorage
     let logs = JSON.parse(localStorage.getItem('fitnessLogs')) || dummyLogs;
 
-    // Show/Hide steps field based on activity type
+    // ── MODAL CONTROL ──────────────────────────────────────────
+    if (openAddLogModal) {
+        openAddLogModal.addEventListener('click', () => {
+            document.getElementById('modalTitle').textContent = 'Log Activity';
+            addLogForm.reset();
+            document.getElementById('editingId').value = '';
+            addLogModal.style.display = 'flex';
+        });
+    }
+
+    const close = () => { addLogModal.style.display = 'none'; };
+    if (closeModal) closeModal.addEventListener('click', close);
+    if (cancelBtn) cancelBtn.addEventListener('click', close);
+
     if (activityTypeSelect) {
         activityTypeSelect.addEventListener('change', function () {
-            if (this.value === 'Steps') {
-                stepsField.style.display = 'block';
-            } else {
-                stepsField.style.display = 'none';
-            }
+            stepsField.style.display = this.value === 'Steps' ? 'block' : 'none';
         });
     }
 
-    // Render logs to table (if table exists)
+    // ── RENDERING ──────────────────────────────────────────────
     function renderLogs() {
-        if (!logsTableBody) return;
+        if (!activityFeed) return;
 
-        const isDashboard = logsTableBody.classList.contains('small');
-        logsTableBody.innerHTML = '';
+        activityFeed.innerHTML = '';
+        const filteredLogs = applyFilters(logs);
 
-        logs.forEach(log => {
-            const tr = document.createElement('tr');
-            if (isDashboard) {
-                // Condensed version for Dashboard
-                tr.innerHTML = `
-                    <td>${formatDateShort(log.date)}</td>
-                    <td>${log.name}</td>
-                    <td>${log.duration}m</td>
-                    <td>${log.steps}</td>
-                    <td>
-                        <a href="#" class="action-btn btn-delete py-0" onclick="deleteLog(${log.id})"><i class="bi bi-trash"></i></a>
-                    </td>
-                `;
-            } else {
-                // Full version for Fitness Logs page
-                tr.innerHTML = `
-                    <td>${formatDate(log.date)}</td>
-                    <td>${log.time}</td>
-                    <td>${log.name}</td>
-                    <td><span class="badge ${getBadgeClass(log.type)}">${log.type}</span></td>
-                    <td>${log.duration} min</td>
-                    <td>${log.steps}</td>
-                    <td>
-                        <a href="#" class="action-btn btn-edit" onclick="editLog(${log.id})"><i class="bi bi-pencil"></i></a>
-                        <a href="#" class="action-btn btn-delete" onclick="deleteLog(${log.id})"><i class="bi bi-trash"></i></a>
-                    </td>
-                `;
-            }
-            logsTableBody.appendChild(tr);
+        if (filteredLogs.length === 0) {
+            activityFeed.innerHTML = `
+                <div class="empty-state">
+                    <i class="bi bi-calendar-x"></i>
+                    <p>No activity logs found for these filters.</p>
+                </div>
+            `;
+            updateStats(0, 0, 0);
+            return;
+        }
+
+        filteredLogs.forEach(log => {
+            const card = document.createElement('div');
+            card.className = 'activity-card';
+            card.innerHTML = `
+                <div class="activity-icon">
+                    <i class="bi ${getIcon(log.type)}"></i>
+                </div>
+                <div class="activity-body">
+                    <div class="activity-header">
+                        <div class="activity-name">${log.name}</div>
+                        <span class="activity-type-badge">${log.type}</span>
+                    </div>
+                    <div class="activity-stats">
+                        <div class="stat-item"><i class="bi bi-clock"></i> ${log.duration} min</div>
+                        ${log.steps !== '--' ? `<div class="stat-item"><i class="bi bi-footprints"></i> ${log.steps} steps</div>` : ''}
+                        <div class="stat-item"><i class="bi bi-calendar3"></i> ${formatDate(log.date)}</div>
+                    </div>
+                    ${log.notes ? `<div class="activity-notes">${log.notes}</div>` : ''}
+                    <div class="activity-footer">
+                        <span class="activity-time">${log.time}</span>
+                        <div class="activity-actions">
+                            <button class="btn-small" onclick="window.editLog(${log.id})"><i class="bi bi-pencil"></i></button>
+                            <button class="btn-small danger" onclick="window.deleteLog(${log.id})"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            activityFeed.appendChild(card);
+        });
+
+        // Update overall stats based on ALL logs (or filtered?) - usually dashboard/summary shows all or week
+        const totalDuration = logs.reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+        const totalSteps = logs.reduce((sum, l) => sum + (parseInt(l.steps) || 0), 0);
+        updateStats(logs.length, totalDuration, totalSteps);
+    }
+
+    function applyFilters(data) {
+        const from = document.getElementById('filterFrom').value;
+        const to = document.getElementById('filterTo').value;
+        const type = document.getElementById('filterType').value;
+
+        return data.filter(log => {
+            const dateMatch = (!from || log.date >= from) && (!to || log.date <= to);
+            const typeMatch = (type === 'All' || log.type === type);
+            return dateMatch && typeMatch;
         });
     }
 
-    function formatDate(dateStr) {
-        const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date(dateStr).toLocaleDateString(undefined, options);
+    document.getElementById('applyFilters')?.addEventListener('click', renderLogs);
+
+    function updateStats(count, duration, steps) {
+        setStat('statTotalLogs', count);
+        setStat('statTotalDuration', duration);
+        setStat('statTotalSteps', steps.toLocaleString());
     }
 
-    function formatDateShort(dateStr) {
-        const date = new Date(dateStr);
-        return `${date.getMonth() + 1}/${date.getDate()}`;
-    }
-
-    function getBadgeClass(type) {
-        switch (type) {
-            case 'Workout': return 'bg-primary';
-            case 'Steps': return 'bg-success';
-            default: return 'bg-secondary';
+    function setStat(id, val) {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === 'statTotalDuration') el.innerHTML = `${val} <small style="font-size: 1rem">min</small>`;
+            else el.textContent = val;
         }
     }
 
-    // Handle form submission
+    function getIcon(type) {
+        if (type === 'Workout') return 'bi-lightning-charge';
+        if (type === 'Steps') return 'bi-walking';
+        return 'bi-activity';
+    }
+
+    function formatDate(dateStr) {
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        return new Date(dateStr).toLocaleDateString(undefined, options);
+    }
+
+    // ── FORM SUBMISSION ────────────────────────────────────────
     if (addLogForm) {
         addLogForm.addEventListener('submit', function (e) {
             e.preventDefault();
+            const editId = document.getElementById('editingId').value;
 
-            const newLog = {
-                id: Date.now(),
+            const logData = {
+                id: editId ? parseInt(editId) : Date.now(),
                 name: document.getElementById('activityName').value,
                 type: document.getElementById('activityType').value,
                 duration: parseInt(document.getElementById('duration').value),
@@ -100,32 +156,40 @@ document.addEventListener('DOMContentLoaded', function () {
                 notes: document.getElementById('notes').value
             };
 
-            logs.unshift(newLog); // Add to beginning
+            if (editId) {
+                logs = logs.map(l => l.id === logData.id ? logData : l);
+            } else {
+                logs.unshift(logData);
+            }
+
             localStorage.setItem('fitnessLogs', JSON.stringify(logs));
-
             renderLogs();
-
-            // Close modal
-            const modalElement = document.getElementById('addLogModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.hide();
-
-            // Reset form
-            addLogForm.reset();
-            if (stepsField) stepsField.style.display = 'none';
-
-            // Trigger custom event for other scripts (like charts) to update
+            close();
             window.dispatchEvent(new Event('logsUpdated'));
         });
     }
 
-    // Global action functions (prototypes)
+    // ── GLOBAL ACTIONS ──────────────────────────────────────────
     window.editLog = function (id) {
-        alert('Edit functionality triggered for log ID: ' + id);
+        const log = logs.find(l => l.id === id);
+        if (!log) return;
+
+        document.getElementById('modalTitle').textContent = 'Edit Activity';
+        document.getElementById('activityName').value = log.name;
+        document.getElementById('activityType').value = log.type;
+        document.getElementById('duration').value = log.duration;
+        document.getElementById('steps').value = log.steps === '--' ? '' : log.steps;
+        document.getElementById('date').value = log.date;
+        document.getElementById('time').value = log.time;
+        document.getElementById('notes').value = log.notes || '';
+        document.getElementById('editingId').value = log.id;
+
+        stepsField.style.display = log.type === 'Steps' ? 'block' : 'none';
+        addLogModal.style.display = 'flex';
     };
 
     window.deleteLog = function (id) {
-        if (confirm('Are you sure you want to delete this log?')) {
+        if (confirm('Delete this activity log?')) {
             logs = logs.filter(l => l.id !== id);
             localStorage.setItem('fitnessLogs', JSON.stringify(logs));
             renderLogs();

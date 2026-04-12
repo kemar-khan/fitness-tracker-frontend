@@ -2,237 +2,114 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Fitness Tracker</title>
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — FitPulse</title>
 
     <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/dashboard.css" />
 </head>
 
-<body class="dashboard-body">
+<body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-strava sticky-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="dashboard.html">Fitness Tracker</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="dashboard.html">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="fitness.html">Fitness Logs</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="nutrition.html">Nutrition</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="profile.html">Profile</a>
-                    </li>
-                </ul>
-                <div class="d-flex align-items-center">
-                    <div class="nav-user-profile me-3 d-none d-lg-flex">
-                        <span id="navUserName" class="text-white fw-bold me-2">Jane Doe</span>
-                        <div class="nav-avatar">
-                            <i class="bi bi-person-circle"></i>
-                        </div>
-                    </div>
-                    <a href="index.html" class="nav-link text-white fw-bold">Logout</a>
-                </div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">FitPulse</div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item active"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
+            <a href="fitness.html" class="nav-item"><i class="bi bi-activity"></i><span>Workouts</span></a>
+            <a href="nutrition.html" class="nav-item"><i class="bi bi-egg-fried"></i><span>Nutrition</span></a>
+            <a href="notifications.html" class="nav-item"><i class="bi bi-bell-fill"></i><span>Alerts</span></a>
+            <a href="profile.html" class="nav-item"><i class="bi bi-person"></i><span>Profile</span></a>
+        </nav>
+        <a href="profile.html" class="sidebar-user">
+            <img src="https://i.pravatar.cc/40?img=12" alt="User" class="user-avatar" />
+            <div class="user-info">
+                <div style="font-size: 0.85rem; font-weight: 700;">Jordan Lee</div>
+                <div style="font-size: 0.7rem; color: var(--lime);">PRO MEMBER</div>
             </div>
-        </div>
-    </nav>
+        </a>
+    </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-            <h2>Dashboard</h2>
-        </div>
+    <div class="main-wrapper">
+        <header class="topbar">
+            <h1 class="page-title">Personal <span>Dashboard</span></h1>
+        </header>
 
-        <!-- Summary Cards Row -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-3">
+        <main class="dashboard-content">
+            <!-- Summary Stats -->
+            <section class="stats-grid">
                 <div class="summary-card">
-                    <div class="card-title">Workouts Sessions</div>
-                    <div id="summaryWorkouts" class="card-value">--<span class="card-unit">sessions</span></div>
+                    <div class="card-title">Workout Sessions</div>
+                    <div class="card-value" id="summaryWorkouts">--</div>
+                    <span class="card-unit">sessions</span>
                 </div>
-            </div>
-            <div class="col-md-3">
                 <div class="summary-card">
                     <div class="card-title">Total Duration</div>
-                    <div id="summaryDuration" class="card-value">--<span class="card-unit">min</span></div>
+                    <div class="card-value" id="summaryDuration">--</div>
+                    <span class="card-unit">min</span>
                 </div>
-            </div>
-            <div class="col-md-3">
                 <div class="summary-card">
                     <div class="card-title">Total Calories</div>
-                    <div id="summarySteps" class="card-value">--<span class="card-unit">k</span></div>
+                    <div class="card-value" id="summaryCalories">--</div>
+                    <span class="card-unit">k</span>
                 </div>
-            </div>
-            <div class="col-md-3">
                 <div class="summary-card">
-                    <div class="card-title">Current Weight</div>
-                    <div id="summaryAvg" class="card-value">--<span class="card-unit">kg</span></div>
+                    <div class="card-title">Average Time</div>
+                    <div class="card-value" id="summaryAvg">--</div>
+                    <span class="card-unit">min</span>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- Charts Row -->
-        <div class="row g-4 mb-5">
-            <div class="col-lg-8">
+            <!-- Charts Section -->
+            <section class="charts-grid">
                 <div class="chart-card">
-                    <h4>Weekly Activity Duration</h4>
+                    <div class="chart-header">
+                        <label class="chart-title">Weekly Activity Duration</label>
+                    </div>
                     <div class="chart-container">
                         <canvas id="activityChart"></canvas>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-4">
                 <div class="chart-card">
-                    <h4>Steps Trend</h4>
+                    <div class="chart-header">
+                        <label class="chart-title">Steps Trend</label>
+                    </div>
                     <div class="chart-container">
                         <canvas id="stepsChart"></canvas>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- Bottom Section: Activities & Meals -->
-        <div class="row g-4">
-            <!-- Recent Activity -->
-            <div class="col-lg-8">
-                <div class="activity-table-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="m-0 fw-bold">Recent Activity</h5>
-                        <a href="fitness.html" class="text-decoration-none small fw-bold"
-                            style="color: var(--strava-orange);">View All</a>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table strava-table table-sm">
-                            <thead>
-                                <tr class="small">
-                                    <th>Date</th>
-                                    <th>Activity</th>
-                                    <th>Dur</th>
-                                    <th>Steps</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logsTableBody" class="small">
-                                <!-- Logs will be rendered here via JS -->
-                            </tbody>
-                        </table>
+            <!-- Feeds Section -->
+            <section class="feeds-grid">
+                <!-- Recent Activity List -->
+                <div class="feed-section">
+                    <label class="section-label">Recent Activity <a href="fitness.html" class="view-all">View All</a></label>
+                    <div id="logsFeed">
+                        <!-- Loaded by JS -->
                     </div>
                 </div>
-            </div>
 
-            <!-- Recent Meals -->
-            <div class="col-lg-4">
-                <div class="activity-table-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="m-0 fw-bold">Recent Meals</h5>
-                        <a href="nutrition.html" class="text-decoration-none small fw-bold"
-                            style="color: var(--strava-orange);">Plan</a>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table strava-table table-sm">
-                            <thead>
-                                <tr class="small">
-                                    <th>Meal</th>
-                                    <th>Kcal</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentMealsBody" class="small">
-                                <!-- Meals will be rendered here via JS -->
-                                <tr>
-                                    <td colspan="3" class="text-muted text-center py-4">No meals tracked yet</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <!-- Recent Meals List -->
+                <div class="feed-section">
+                    <label class="section-label">Recent Meals <a href="nutrition.html" class="view-all">Plan</a></label>
+                    <div id="mealsFeed">
+                        <!-- Loaded by JS -->
                     </div>
                 </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Add Log Modal -->
-    <div class="modal fade" id="addLogModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Activity Log</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form id="addLogForm">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="activityName" class="form-label">Activity Name</label>
-                                <input type="text" class="form-control" id="activityName" placeholder="e.g. Morning Run"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="activityType" class="form-label">Category/Type</label>
-                                <select class="form-select form-control" id="activityType" required>
-                                    <option value="Workout">Workout</option>
-                                    <option value="Steps">Steps</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="duration" class="form-label">Duration (min)</label>
-                                <input type="number" class="form-control" id="duration" placeholder="e.g. 45" required>
-                            </div>
-                            <div id="stepsField" class="col-12" style="display: none;">
-                                <label for="steps" class="form-label">Steps (optional)</label>
-                                <input type="number" class="form-control" id="steps" placeholder="e.g. 8000">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="date" class="form-label">Date</label>
-                                <input type="date" class="form-control" id="date" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="time" class="form-label">Time</label>
-                                <input type="time" class="form-control" id="time" required>
-                            </div>
-                            <div class="col-12">
-                                <label for="notes" class="form-label">Notes (optional)</label>
-                                <textarea class="form-control" id="notes" rows="3"
-                                    placeholder="How did it feel?"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="reset" class="btn btn-outline-secondary px-4">Reset</button>
-                        <button type="submit" class="btn btn-strava w-auto px-4">Save Activity</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <!-- Custom JS -->
-    <script src="js/fitness.js"></script>
-    <script src="js/charts.js"></script>
+    <script src="js/dashboard.js"></script>
 </body>
 
 </html>

@@ -1,209 +1,199 @@
+/* ═══════════════════════════════════════════════════════════════
+   FitPulse — Nutrition Planner Logic
+   High-Contrast Lime & Black Edition
+   ═══════════════════════════════════════════════════════════════ */
+
+'use strict';
+
 document.addEventListener('DOMContentLoaded', function () {
-    // --- Dummy Meal Dataset ---
+    // --- DATA ---
     const mealDatabase = [
-        { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, tags: ["High Protein", "Low Carb"], img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80" },
-        { id: 2, name: "Oatmeal with Berries", category: "Breakfast", calories: 280, protein: 8, carbs: 45, fat: 5, tags: ["Healthy", "Fiber"], img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=500&q=80" },
-        { id: 3, name: "Salmon with Asparagus", category: "Dinner", calories: 420, protein: 30, carbs: 5, fat: 25, tags: ["Omega 3", "Keto"], img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=500&q=80" },
-        { id: 4, name: "Avocado Toast", category: "Breakfast", calories: 310, protein: 7, carbs: 28, fat: 18, tags: ["Vegan", "Healthy Fats"], img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=500&q=80" },
-        { id: 5, name: "Beef & Broccoli", category: "Lunch", calories: 450, protein: 28, carbs: 35, fat: 15, tags: ["High Protein"], img: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=500&q=80" },
-        { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, tags: ["Quick", "High Protein"], img: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=500&q=80" },
-        { id: 7, name: "Quinoa Bowl", category: "Lunch", calories: 380, protein: 12, carbs: 55, fat: 10, tags: ["Vegan", "Complex Carbs"], img: "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=500&q=80" },
-        { id: 8, name: "Peptide Protein Shake", category: "Snack", calories: 150, protein: 25, carbs: 5, fat: 2, tags: ["Post Workout"], img: "https://images.unsplash.com/photo-1577116662214-727e779a1f10?w=500&q=80" }
+        { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80" },
+        { id: 2, name: "Oatmeal with Berries", category: "Breakfast", calories: 280, protein: 8, carbs: 45, fat: 5, img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200&q=80" },
+        { id: 3, name: "Salmon with Asparagus", category: "Dinner", calories: 420, protein: 30, carbs: 5, fat: 25, img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=200&q=80" },
+        { id: 4, name: "Avocado Toast", category: "Breakfast", calories: 310, protein: 7, carbs: 28, fat: 18, img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&q=80" },
+        { id: 5, name: "Beef & Broccoli", category: "Lunch", calories: 450, protein: 28, carbs: 35, fat: 15, img: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&q=80" },
+        { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, img: "https://images.unsplash.com/photo-1488477181946-6228a0291777?w=200&q=80" }
     ];
 
     let favorites = JSON.parse(localStorage.getItem('favoriteMeals')) || [];
+    let trackedMeals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
+    let dailyGoal = parseInt(localStorage.getItem('dailyCalorieGoal')) || 2500;
 
-    // --- Calorie Calculator ---
-    const calorieForm = document.getElementById('calorieForm');
-    const calorieResults = document.getElementById('calorieResults');
-    const dailyCaloriesEl = document.getElementById('dailyCalories');
-
-    if (calorieForm) {
-        calorieForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const gender = document.getElementById('gender').value;
-            const age = parseInt(document.getElementById('age').value);
-            const height = parseFloat(document.getElementById('height').value);
-            const weight = parseFloat(document.getElementById('weight').value);
-            const activityValue = parseFloat(document.getElementById('activity').value);
-
-            let bmr;
-            if (gender === 'male') {
-                // Mifflin-St Jeor Equation (Male)
-                bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
-            } else {
-                // Mifflin-St Jeor Equation (Female)
-                bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
-            }
-
-            const dailyCalories = Math.round(bmr * activityValue);
-            dailyCaloriesEl.textContent = dailyCalories.toLocaleString();
-            calorieResults.style.display = 'block';
-
-            // Scroll to results
-            calorieResults.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        });
-
-        calorieForm.addEventListener('reset', function () {
-            calorieResults.style.display = 'none';
-        });
-    }
-
-    // --- Meal Search & Suggestions ---
+    // --- DOM ---
     const mealSearch = document.getElementById('mealSearch');
-    const mealFilter = document.getElementById('mealFilter');
-    const searchBtn = document.getElementById('searchBtn');
-    const mealGrid = document.getElementById('mealGrid');
-
-    function renderMeals(meals) {
-        if (!mealGrid) return;
-        mealGrid.innerHTML = '';
-
-        if (meals.length === 0) {
-            mealGrid.innerHTML = '<div class="col-12 text-center p-5"><p class="text-muted">No meals found matching your criteria.</p></div>';
-            return;
-        }
-
-        meals.forEach(meal => {
-            const isFavorite = favorites.some(fav => fav.id === meal.id);
-            const card = document.createElement('div');
-            card.className = 'col-md-6 col-lg-4';
-            card.innerHTML = `
-                <div class="meal-card">
-                    <div class="meal-img" style="background-image: url('${meal.img}')"></div>
-                    <div class="meal-body">
-                        <div class="meal-title">
-                            ${meal.name}
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-sm ${isFavorite ? 'btn-strava' : 'btn-outline-strava'} fav-toggle" data-id="${meal.id}">
-                                    <i class="bi ${isFavorite ? 'bi-heart-fill' : 'bi-heart'}"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="text-muted small mb-2">${meal.category} • ${meal.calories} kcal</div>
-                        <div class="meal-macros">
-                            <span class="macro-badge">P: ${meal.protein}g</span>
-                            <span class="macro-badge">C: ${meal.carbs}g</span>
-                            <span class="macro-badge">F: ${meal.fat}g</span>
-                        </div>
-                        <button class="btn btn-strava w-100 btn-sm mt-2 track-meal-btn" data-id="${meal.id}">
-                            <i class="bi bi-plus-circle me-1"></i> Track Meal
-                        </button>
-                    </div>
-                </div>
-            `;
-            mealGrid.appendChild(card);
-        });
-
-        // Add Listeners to Favorite Buttons
-        document.querySelectorAll('.fav-toggle').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const id = parseInt(this.getAttribute('data-id'));
-                toggleFavorite(id);
-            });
-        });
-
-        // Add Listeners to Track Buttons
-        document.querySelectorAll('.track-meal-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const id = parseInt(this.getAttribute('data-id'));
-                trackMeal(id);
-            });
-        });
-    }
-
-    function trackMeal(mealId) {
-        const meal = mealDatabase.find(m => m.id === mealId);
-        const trackedMeals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
-
-        // Add timestamp to the tracked meal
-        const newTrackedMeal = {
-            ...meal,
-            trackedAt: new Date().toISOString()
-        };
-
-        trackedMeals.unshift(newTrackedMeal);
-        localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
-
-        alert(`Successfully tracked ${meal.name}!`);
-
-        // Dispatch event for dashboard update
-        window.dispatchEvent(new Event('logsUpdated'));
-    }
-
-    function toggleFavorite(mealId) {
-        const meal = mealDatabase.find(m => m.id === mealId);
-        const index = favorites.findIndex(f => f.id === mealId);
-
-        if (index === -1) {
-            favorites.push(meal);
-        } else {
-            favorites.splice(index, 1);
-        }
-
-        localStorage.setItem('favoriteMeals', JSON.stringify(favorites));
-        renderMeals(filterMeals());
-        renderFavorites();
-    }
-
-    function filterMeals() {
-        const query = mealSearch.value.toLowerCase();
-        const category = mealFilter.value;
-
-        return mealDatabase.filter(meal => {
-            const matchesQuery = meal.name.toLowerCase().includes(query);
-            const matchesCategory = category === 'All' || meal.category === category;
-            return matchesQuery && matchesCategory;
-        });
-    }
-
-    if (searchBtn) {
-        searchBtn.addEventListener('click', () => renderMeals(filterMeals()));
-    }
-
-    if (mealSearch) {
-        mealSearch.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') renderMeals(filterMeals());
-        });
-    }
-
-    // --- Favorite Management ---
+    const mealResults = document.getElementById('mealResults');
     const favoritesList = document.getElementById('favoritesList');
-    const favCount = document.getElementById('favCount');
+    
+    // Modals
+    const calculatorModal = document.getElementById('calculatorModal');
+    const goalModal = document.getElementById('goalModal');
+
+    // --- STATE ---
+    let pendingCategory = null;
+
+    // ── INITIALIZATION ──────────────────────────────────────────
+    function init() {
+        renderJournal();
+        renderDiscovery();
+        renderFavorites();
+        updateStats();
+    }
+
+    // ── JOURNAL RENDERING ───────────────────────────────────────
+    function renderJournal() {
+        const categories = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+        categories.forEach(cat => {
+            const container = document.getElementById(`items${cat}`);
+            const countEl = document.getElementById(`count${cat}`);
+            if (!container) return;
+
+            const items = trackedMeals.filter(m => m.category === cat);
+            countEl.textContent = items.length;
+
+            if (items.length === 0) {
+                container.innerHTML = `<p style="font-size: 0.8rem; color: #444; padding: 10px 0;">No ${cat.toLowerCase()} logged.</p>`;
+            } else {
+                container.innerHTML = items.map(m => `
+                    <div class="item-card">
+                        <div class="item-icon"><i class="bi bi-check-circle-fill"></i></div>
+                        <div class="item-body">
+                            <div class="item-title">${m.name}</div>
+                            <div class="item-meta">${m.calories} kcal • P:${m.protein}g C:${m.carbs}g F:${m.fat}g</div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-small danger" onclick="removeTracked('${m.trackedAt}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        });
+    }
+
+    // ── DISCOVERY RENDERING ─────────────────────────────────────
+    function renderDiscovery(query = '') {
+        const filtered = mealDatabase.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
+        mealResults.innerHTML = filtered.map(m => `
+            <div class="result-item">
+                <div class="result-img" style="background-image: url('${m.img}')"></div>
+                <div class="result-info">
+                    <span class="result-name">${m.name}</span>
+                    <span class="result-stats">${m.calories} kcal • ${m.category}</span>
+                </div>
+                <button class="btn-small" onclick="trackFromSearch(${m.id})"><i class="bi bi-plus-lg"></i></button>
+            </div>
+        `).join('');
+    }
 
     function renderFavorites() {
         if (!favoritesList) return;
-        favoritesList.innerHTML = '';
-        favCount.textContent = favorites.length;
-
         if (favorites.length === 0) {
-            favoritesList.innerHTML = '<p class="text-muted italic mb-0">No favorites yet. Search and add some!</p>';
+            favoritesList.innerHTML = '<p style="font-size: 0.8rem; color: #444;">No favorites yet.</p>';
             return;
         }
-
-        favorites.forEach(meal => {
-            const item = document.createElement('div');
-            item.className = 'favorite-item';
-            item.innerHTML = `
-                <div class="favorite-info">
-                    <span class="favorite-name">${meal.name}</span>
-                    <span class="favorite-calories">${meal.calories} kcal • ${meal.protein}g P / ${meal.carbs}g C</span>
+        favoritesList.innerHTML = favorites.map(m => `
+            <div class="fav-item">
+                <div class="fav-info">
+                    <span class="fav-name">${m.name}</span>
+                    <span class="fav-stats">${m.calories} kcal • ${m.category}</span>
                 </div>
-                <button class="btn btn-sm btn-outline-danger border-0" onclick="removeFavorite(${meal.id})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            `;
-            favoritesList.appendChild(item);
-        });
+                <button class="btn-small" onclick="trackFromSearch(${m.id})"><i class="bi bi-plus-lg"></i></button>
+            </div>
+        `).join('');
     }
 
-    // Global scope for onclick
-    window.removeFavorite = function (id) {
-        toggleFavorite(id);
+    // ── STATS ───────────────────────────────────────────────────
+    function updateStats() {
+        const consumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
+        const remaining = dailyGoal - consumed;
+        
+        const protein = trackedMeals.reduce((sum, m) => sum + m.protein, 0);
+        const carbs = trackedMeals.reduce((sum, m) => sum + m.carbs, 0);
+        const fat = trackedMeals.reduce((sum, m) => sum + m.fat, 0);
+
+        document.getElementById('statDailyBudget').textContent = dailyGoal.toLocaleString();
+        document.getElementById('statConsumed').textContent = consumed.toLocaleString();
+        document.getElementById('statRemaining').textContent = remaining.toLocaleString();
+        document.getElementById('statMacros').textContent = `${protein}g / ${carbs}g / ${fat}g`;
+    }
+
+    // ── ACTIONS ─────────────────────────────────────────────────
+    window.quickAdd = (category) => {
+        pendingCategory = category;
+        mealSearch.placeholder = `Search for ${category}...`;
+        mealSearch.focus();
+        // Visual cue
+        mealSearch.style.borderColor = 'var(--lime)';
+        setTimeout(() => mealSearch.style.borderColor = '', 1500);
     };
 
-    // Initial Render
-    renderMeals(mealDatabase);
-    renderFavorites();
+    window.trackFromSearch = (id) => {
+        const meal = mealDatabase.find(m => m.id === id);
+        if (!meal) return;
+
+        const newEntry = {
+            ...meal,
+            category: pendingCategory || meal.category,
+            trackedAt: new Date().toISOString()
+        };
+
+        trackedMeals.unshift(newEntry);
+        localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
+        
+        pendingCategory = null;
+        mealSearch.placeholder = "Search meals...";
+        
+        init();
+        window.dispatchEvent(new Event('logsUpdated'));
+    };
+
+    window.removeTracked = (timestamp) => {
+        trackedMeals = trackedMeals.filter(m => m.trackedAt !== timestamp);
+        localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
+        init();
+        window.dispatchEvent(new Event('logsUpdated'));
+    };
+
+    // ── MODALS ──────────────────────────────────────────────────
+    document.getElementById('openCalculatorBtn').onclick = () => calculatorModal.style.display = 'flex';
+    document.getElementById('closeCalcModal').onclick = () => calculatorModal.style.display = 'none';
+    
+    document.getElementById('editGoalBtn').onclick = () => {
+        document.getElementById('manualGoal').value = dailyGoal;
+        goalModal.style.display = 'flex';
+    };
+    document.getElementById('closeGoalModal').onclick = () => goalModal.style.display = 'none';
+
+    // Forms
+    document.getElementById('calorieForm').onsubmit = (e) => {
+        e.preventDefault();
+        const weight = parseFloat(document.getElementById('weight').value);
+        const height = parseFloat(document.getElementById('height').value);
+        const age = parseInt(document.getElementById('age').value);
+        const gender = document.getElementById('gender').value;
+        const activity = parseFloat(document.getElementById('activity').value);
+
+        let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+        bmr += (gender === 'male' ? 5 : -161);
+        
+        dailyGoal = Math.round(bmr * activity);
+        localStorage.setItem('dailyCalorieGoal', dailyGoal);
+        
+        calculatorModal.style.display = 'none';
+        updateStats();
+    };
+
+    document.getElementById('goalForm').onsubmit = (e) => {
+        e.preventDefault();
+        dailyGoal = parseInt(document.getElementById('manualGoal').value);
+        localStorage.setItem('dailyCalorieGoal', dailyGoal);
+        goalModal.style.display = 'none';
+        updateStats();
+    };
+
+    // Search
+    mealSearch.oninput = (e) => renderDiscovery(e.target.value);
+
+    // Initial load
+    init();
 });
