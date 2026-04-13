@@ -65,6 +65,31 @@
                 </div>
             </section>
 
+            <section class="metrics-strip">
+                <div class="metrics-strip-header">
+                    <i class="bi bi-heart-pulse"></i>
+                    <span>Body Metrics Snapshot</span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-chip">
+                        <span class="metric-label">BMI</span>
+                        <span class="metric-value" id="mainCalcBmi">--</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="metric-label">Category</span>
+                        <span class="metric-value metric-value-neutral" id="mainCalcBmiCategory">--</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="metric-label">BMR</span>
+                        <span class="metric-value" id="mainCalcBmr">--</span>
+                    </div>
+                    <div class="metric-chip">
+                        <span class="metric-label">TDEE</span>
+                        <span class="metric-value" id="mainCalcTdee">--</span>
+                    </div>
+                </div>
+            </section>
+
             <!-- Journal Column -->
             <section class="journal-column">
                 <!-- Breakfast -->
@@ -175,6 +200,17 @@
                     <button type="submit" class="btn-primary" style="width: 100%;">Calculate & Apply</button>
                 </div>
             </form>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                <div style="font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                    Last Calculation
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                    <div>BMI: <strong id="calcBmi">--</strong></div>
+                    <div>Category: <strong id="calcBmiCategory">--</strong></div>
+                    <div>BMR: <strong id="calcBmr">--</strong></div>
+                    <div>TDEE: <strong id="calcTdee">--</strong></div>
+                </div>
+            </div>
         </div>
     </div>
 

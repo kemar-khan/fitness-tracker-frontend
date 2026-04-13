@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const mealSearch = document.getElementById('mealSearch');
     const mealResults = document.getElementById('mealResults');
     const favoritesList = document.getElementById('favoritesList');
-    
+
     // Modals
     const calculatorModal = document.getElementById('calculatorModal');
     const goalModal = document.getElementById('goalModal');
@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
         renderDiscovery();
         renderFavorites();
         updateStats();
+        renderCalorieMetrics();
     }
 
     // ── JOURNAL RENDERING ───────────────────────────────────────
@@ -106,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateStats() {
         const consumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
         const remaining = dailyGoal - consumed;
-        
+
         const protein = trackedMeals.reduce((sum, m) => sum + m.protein, 0);
         const carbs = trackedMeals.reduce((sum, m) => sum + m.carbs, 0);
         const fat = trackedMeals.reduce((sum, m) => sum + m.fat, 0);
@@ -115,6 +116,91 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('statConsumed').textContent = consumed.toLocaleString();
         document.getElementById('statRemaining').textContent = remaining.toLocaleString();
         document.getElementById('statMacros').textContent = `${protein}g / ${carbs}g / ${fat}g`;
+    }
+
+    // ── CALORIE ENGINE (REUSABLE FORMULAS) ─────────────────────
+    function calculateBMI(weightKg, heightCm) {
+        const heightM = heightCm / 100;
+        return weightKg / (heightM * heightM);
+    }
+
+    function getBMICategory(bmi) {
+        if (bmi < 18.5) return 'Underweight';
+        if (bmi < 25) return 'Normal';
+        if (bmi < 30) return 'Overweight';
+        return 'Obese';
+    }
+
+    // Mifflin-St Jeor Equation
+    function calculateBMR(weightKg, heightCm, age, gender) {
+        const base = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
+        return base + (gender === 'male' ? 5 : -161);
+    }
+
+    function calculateTDEE(bmr, activityMultiplier) {
+        return bmr * activityMultiplier;
+    }
+
+    function validateCalculatorInputs({ weight, height, age, activity, gender }) {
+        if (!Number.isFinite(weight) || weight <= 0 || weight > 500) {
+            throw new Error('Please enter a valid weight between 1 and 500 kg.');
+        }
+        if (!Number.isFinite(height) || height <= 0 || height > 300) {
+            throw new Error('Please enter a valid height between 1 and 300 cm.');
+        }
+        if (!Number.isInteger(age) || age < 10 || age > 120) {
+            throw new Error('Please enter a valid age between 10 and 120.');
+        }
+        if (!Number.isFinite(activity) || activity < 1.2 || activity > 2.0) {
+            throw new Error('Please select a valid activity level.');
+        }
+        if (gender !== 'male' && gender !== 'female') {
+            throw new Error('Please select a valid gender.');
+        }
+    }
+
+    function getStoredCalorieMetrics() {
+        try {
+            const raw = localStorage.getItem('calorieMetrics');
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function renderCalorieMetrics() {
+        const metrics = getStoredCalorieMetrics();
+        const fields = [
+            {
+                bmi: document.getElementById('calcBmi'),
+                category: document.getElementById('calcBmiCategory'),
+                bmr: document.getElementById('calcBmr'),
+                tdee: document.getElementById('calcTdee')
+            },
+            {
+                bmi: document.getElementById('mainCalcBmi'),
+                category: document.getElementById('mainCalcBmiCategory'),
+                bmr: document.getElementById('mainCalcBmr'),
+                tdee: document.getElementById('mainCalcTdee')
+            }
+        ];
+
+        fields.forEach((group) => {
+            if (!group.bmi || !group.category || !group.bmr || !group.tdee) return;
+
+            if (!metrics) {
+                group.bmi.textContent = '--';
+                group.category.textContent = '--';
+                group.bmr.textContent = '--';
+                group.tdee.textContent = '--';
+                return;
+            }
+
+            group.bmi.textContent = metrics.bmi ?? '--';
+            group.category.textContent = metrics.bmiCategory ?? '--';
+            group.bmr.textContent = Number.isFinite(metrics.bmr) ? metrics.bmr.toLocaleString() : '--';
+            group.tdee.textContent = Number.isFinite(metrics.tdee) ? metrics.tdee.toLocaleString() : '--';
+        });
     }
 
     // ── ACTIONS ─────────────────────────────────────────────────
@@ -139,10 +225,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         trackedMeals.unshift(newEntry);
         localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
-        
+
         pendingCategory = null;
         mealSearch.placeholder = "Search meals...";
-        
+
         init();
         window.dispatchEvent(new Event('logsUpdated'));
     };
@@ -157,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── MODALS ──────────────────────────────────────────────────
     document.getElementById('openCalculatorBtn').onclick = () => calculatorModal.style.display = 'flex';
     document.getElementById('closeCalcModal').onclick = () => calculatorModal.style.display = 'none';
-    
+
     document.getElementById('editGoalBtn').onclick = () => {
         document.getElementById('manualGoal').value = dailyGoal;
         goalModal.style.display = 'flex';
@@ -169,23 +255,45 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const weight = parseFloat(document.getElementById('weight').value);
         const height = parseFloat(document.getElementById('height').value);
-        const age = parseInt(document.getElementById('age').value);
+        const age = parseInt(document.getElementById('age').value, 10);
         const gender = document.getElementById('gender').value;
         const activity = parseFloat(document.getElementById('activity').value);
 
-        let bmr = (10 * weight) + (6.25 * height) - (5 * age);
-        bmr += (gender === 'male' ? 5 : -161);
-        
-        dailyGoal = Math.round(bmr * activity);
-        localStorage.setItem('dailyCalorieGoal', dailyGoal);
-        
-        calculatorModal.style.display = 'none';
-        updateStats();
+        try {
+            validateCalculatorInputs({ weight, height, age, activity, gender });
+
+            const bmi = calculateBMI(weight, height);
+            const bmiCategory = getBMICategory(bmi);
+            const bmr = calculateBMR(weight, height, age, gender);
+            const tdee = calculateTDEE(bmr, activity);
+
+            dailyGoal = Math.round(tdee);
+            localStorage.setItem('dailyCalorieGoal', dailyGoal);
+
+            // Keep calculated values for future UI display (dashboard/details)
+            localStorage.setItem('calorieMetrics', JSON.stringify({
+                bmi: Number(bmi.toFixed(1)),
+                bmiCategory,
+                bmr: Math.round(bmr),
+                tdee: Math.round(tdee)
+            }));
+
+            calculatorModal.style.display = 'none';
+            updateStats();
+            renderCalorieMetrics();
+        } catch (error) {
+            alert(error.message || 'Unable to calculate calories. Please check your inputs.');
+        }
     };
 
     document.getElementById('goalForm').onsubmit = (e) => {
         e.preventDefault();
-        dailyGoal = parseInt(document.getElementById('manualGoal').value);
+        const manualGoal = parseInt(document.getElementById('manualGoal').value, 10);
+        if (!Number.isInteger(manualGoal) || manualGoal < 800 || manualGoal > 10000) {
+            alert('Please enter a valid calorie goal between 800 and 10,000.');
+            return;
+        }
+        dailyGoal = manualGoal;
         localStorage.setItem('dailyCalorieGoal', dailyGoal);
         goalModal.style.display = 'none';
         updateStats();
