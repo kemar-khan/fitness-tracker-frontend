@@ -409,10 +409,26 @@ body {
     color: var(--text-muted);
 }
 
+.discovery-filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
 .meal-results {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.discovery-empty {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
 }
 
 .result-item {
@@ -529,6 +545,11 @@ body {
     color: var(--black);
 }
 
+.btn-small.active-favorite {
+    background: rgba(255, 107, 107, 0.18);
+    color: #ff6b6b;
+}
+
 /* ── MODALS (Reused) ────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;
@@ -609,5 +630,9 @@ body {
 
     .metrics-grid {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .discovery-filters {
+        grid-template-columns: 1fr;
     }
 }

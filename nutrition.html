@@ -140,6 +140,30 @@
                         <i class="bi bi-search"></i>
                         <input type="text" id="mealSearch" class="search-input" placeholder="Search meals..." />
                     </div>
+                    <div class="discovery-filters">
+                        <select id="filterMealType" class="form-input">
+                            <option value="All">All Types</option>
+                            <option value="Breakfast">Breakfast</option>
+                            <option value="Lunch">Lunch</option>
+                            <option value="Dinner">Dinner</option>
+                            <option value="Snack">Snack</option>
+                        </select>
+                        <select id="filterDiet" class="form-input">
+                            <option value="All">All Diets</option>
+                            <option value="Vegetarian">Vegetarian</option>
+                            <option value="Vegan">Vegan</option>
+                            <option value="Keto">Keto</option>
+                            <option value="High-Protein">High-Protein</option>
+                            <option value="Low-Carb">Low-Carb</option>
+                        </select>
+                        <select id="filterCuisine" class="form-input">
+                            <option value="All">All Cuisines</option>
+                            <option value="Western">Western</option>
+                            <option value="Asian">Asian</option>
+                            <option value="Mediterranean">Mediterranean</option>
+                        </select>
+                        <input type="number" id="filterMaxCalories" class="form-input" min="0" placeholder="Max calories" />
+                    </div>
                     <div class="meal-results" id="mealResults">
                         <!-- Loaded by JS -->
                     </div>

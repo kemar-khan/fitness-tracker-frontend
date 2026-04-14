@@ -8,12 +8,12 @@
 document.addEventListener('DOMContentLoaded', function () {
     // --- DATA ---
     const mealDatabase = [
-        { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80" },
-        { id: 2, name: "Oatmeal with Berries", category: "Breakfast", calories: 280, protein: 8, carbs: 45, fat: 5, img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200&q=80" },
-        { id: 3, name: "Salmon with Asparagus", category: "Dinner", calories: 420, protein: 30, carbs: 5, fat: 25, img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=200&q=80" },
-        { id: 4, name: "Avocado Toast", category: "Breakfast", calories: 310, protein: 7, carbs: 28, fat: 18, img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&q=80" },
-        { id: 5, name: "Beef & Broccoli", category: "Lunch", calories: 450, protein: 28, carbs: 35, fat: 15, img: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&q=80" },
-        { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, img: "https://images.unsplash.com/photo-1488477181946-6228a0291777?w=200&q=80" }
+        { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, cuisine: "Western", dietTags: ["High-Protein", "Low-Carb"], ingredients: ["chicken", "lettuce", "tomato"], img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80" },
+        { id: 2, name: "Oatmeal with Berries", category: "Breakfast", calories: 280, protein: 8, carbs: 45, fat: 5, cuisine: "Western", dietTags: ["Vegetarian"], ingredients: ["oats", "berries", "milk"], img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200&q=80" },
+        { id: 3, name: "Salmon with Asparagus", category: "Dinner", calories: 420, protein: 30, carbs: 5, fat: 25, cuisine: "Mediterranean", dietTags: ["Keto", "Low-Carb", "High-Protein"], ingredients: ["salmon", "asparagus", "olive oil"], img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=200&q=80" },
+        { id: 4, name: "Avocado Toast", category: "Breakfast", calories: 310, protein: 7, carbs: 28, fat: 18, cuisine: "Western", dietTags: ["Vegetarian"], ingredients: ["bread", "avocado", "egg"], img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&q=80" },
+        { id: 5, name: "Beef & Broccoli", category: "Lunch", calories: 450, protein: 28, carbs: 35, fat: 15, cuisine: "Asian", dietTags: ["High-Protein"], ingredients: ["beef", "broccoli", "soy sauce"], img: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&q=80" },
+        { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, cuisine: "Mediterranean", dietTags: ["Vegetarian", "High-Protein"], ingredients: ["yogurt", "granola", "berries"], img: "https://images.unsplash.com/photo-1488477181946-6228a0291777?w=200&q=80" }
     ];
 
     let favorites = JSON.parse(localStorage.getItem('favoriteMeals')) || [];
@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const mealSearch = document.getElementById('mealSearch');
     const mealResults = document.getElementById('mealResults');
     const favoritesList = document.getElementById('favoritesList');
+    const filterMealType = document.getElementById('filterMealType');
+    const filterDiet = document.getElementById('filterDiet');
+    const filterCuisine = document.getElementById('filterCuisine');
+    const filterMaxCalories = document.getElementById('filterMaxCalories');
 
     // Modals
     const calculatorModal = document.getElementById('calculatorModal');
@@ -73,17 +77,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── DISCOVERY RENDERING ─────────────────────────────────────
     function renderDiscovery(query = '') {
-        const filtered = mealDatabase.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
+        const q = query.trim().toLowerCase();
+        const selectedType = filterMealType?.value || 'All';
+        const selectedDiet = filterDiet?.value || 'All';
+        const selectedCuisine = filterCuisine?.value || 'All';
+        const maxCalories = parseInt(filterMaxCalories?.value || '', 10);
+
+        const filtered = mealDatabase.filter((m) => {
+            const textMatch = !q
+                || m.name.toLowerCase().includes(q)
+                || m.cuisine.toLowerCase().includes(q)
+                || m.ingredients.some((ingredient) => ingredient.toLowerCase().includes(q));
+            const typeMatch = selectedType === 'All' || m.category === selectedType;
+            const dietMatch = selectedDiet === 'All' || m.dietTags.includes(selectedDiet);
+            const cuisineMatch = selectedCuisine === 'All' || m.cuisine === selectedCuisine;
+            const caloriesMatch = Number.isNaN(maxCalories) || m.calories <= maxCalories;
+
+            return textMatch && typeMatch && dietMatch && cuisineMatch && caloriesMatch;
+        });
+
+        if (filtered.length === 0) {
+            mealResults.innerHTML = '<p class="discovery-empty">No meals matched your current search/filters.</p>';
+            return;
+        }
+
         mealResults.innerHTML = filtered.map(m => `
             <div class="result-item">
                 <div class="result-img" style="background-image: url('${m.img}')"></div>
                 <div class="result-info">
                     <span class="result-name">${m.name}</span>
-                    <span class="result-stats">${m.calories} kcal • ${m.category}</span>
+                    <span class="result-stats">${m.calories} kcal • ${m.category} • ${m.cuisine}</span>
                 </div>
+                <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="Toggle favorite">
+                    <i class="bi ${isFavoriteMeal(m.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
+                </button>
                 <button class="btn-small" onclick="trackFromSearch(${m.id})"><i class="bi bi-plus-lg"></i></button>
             </div>
         `).join('');
+    }
+
+    function isFavoriteMeal(id) {
+        return favorites.some((m) => m.id === id);
     }
 
     function renderFavorites() {
@@ -257,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (group.macros) {
                 const macros = metrics.macroTargets;
                 group.macros.textContent = macros
-                    ? `P:${macros.proteinGrams}g C:${macros.carbsGrams}g F:${macros.fatGrams}g`
+                    ? `P:${macros.proteinGrams}g (${macros.proteinPct}%) C:${macros.carbsGrams}g (${macros.carbsPct}%) F:${macros.fatGrams}g (${macros.fatPct}%)`
                     : '--';
             }
         });
@@ -298,6 +332,21 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
         init();
         window.dispatchEvent(new Event('logsUpdated'));
+    };
+
+    window.toggleFavoriteMeal = (id) => {
+        const meal = mealDatabase.find((m) => m.id === id);
+        if (!meal) return;
+
+        if (isFavoriteMeal(id)) {
+            favorites = favorites.filter((m) => m.id !== id);
+        } else {
+            favorites.unshift(meal);
+        }
+
+        localStorage.setItem('favoriteMeals', JSON.stringify(favorites));
+        renderFavorites();
+        renderDiscovery(mealSearch.value);
     };
 
     // ── MODALS ──────────────────────────────────────────────────
@@ -372,6 +421,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Search
     mealSearch.oninput = (e) => renderDiscovery(e.target.value);
+    filterMealType?.addEventListener('change', () => renderDiscovery(mealSearch.value));
+    filterDiet?.addEventListener('change', () => renderDiscovery(mealSearch.value));
+    filterCuisine?.addEventListener('change', () => renderDiscovery(mealSearch.value));
+    filterMaxCalories?.addEventListener('input', () => renderDiscovery(mealSearch.value));
 
     // Initial load
     init();
