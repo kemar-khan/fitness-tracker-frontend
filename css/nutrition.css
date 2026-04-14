@@ -256,6 +256,18 @@ body {
     color: #d6d6d6;
 }
 
+.metric-value-good {
+    color: #7ee787;
+}
+
+.metric-value-warn {
+    color: #f2cc60;
+}
+
+.metric-value-danger {
+    color: #ff6b6b;
+}
+
 /* ── MEAL SECTIONS ────────────────────────────────────────────── */
 .journal-column {
     display: flex;

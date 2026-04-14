@@ -141,12 +141,48 @@ document.addEventListener('DOMContentLoaded', function () {
         return bmr * activityMultiplier;
     }
 
-    function validateCalculatorInputs({ weight, height, age, activity, gender }) {
+    function convertHeightToCm(height, unit) {
+        return unit === 'ft' ? height * 30.48 : height;
+    }
+
+    function convertWeightToKg(weight, unit) {
+        return unit === 'lb' ? weight * 0.45359237 : weight;
+    }
+
+    function getGoalAdjustedCalories(tdee, goalType) {
+        if (goalType === 'lose') return tdee - 500;
+        if (goalType === 'gain') return tdee + 300;
+        return tdee;
+    }
+
+    function calculateMacroTargets(targetCalories) {
+        const proteinCalories = targetCalories * 0.3;
+        const carbCalories = targetCalories * 0.4;
+        const fatCalories = targetCalories * 0.3;
+
+        return {
+            proteinGrams: Math.round(proteinCalories / 4),
+            carbsGrams: Math.round(carbCalories / 4),
+            fatGrams: Math.round(fatCalories / 9),
+            proteinPct: 30,
+            carbsPct: 40,
+            fatPct: 30
+        };
+    }
+
+    function getBMICategoryClass(category) {
+        if (category === 'Normal') return 'metric-value-good';
+        if (category === 'Overweight') return 'metric-value-warn';
+        if (category === 'Obese') return 'metric-value-danger';
+        return 'metric-value-neutral';
+    }
+
+    function validateCalculatorInputs({ weight, height, age, activity, gender, goalType, heightUnit, weightUnit }) {
         if (!Number.isFinite(weight) || weight <= 0 || weight > 500) {
-            throw new Error('Please enter a valid weight between 1 and 500 kg.');
+            throw new Error('Please enter a valid weight.');
         }
         if (!Number.isFinite(height) || height <= 0 || height > 300) {
-            throw new Error('Please enter a valid height between 1 and 300 cm.');
+            throw new Error('Please enter a valid height.');
         }
         if (!Number.isInteger(age) || age < 10 || age > 120) {
             throw new Error('Please enter a valid age between 10 and 120.');
@@ -156,6 +192,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         if (gender !== 'male' && gender !== 'female') {
             throw new Error('Please select a valid gender.');
+        }
+        if (goalType !== 'lose' && goalType !== 'maintain' && goalType !== 'gain') {
+            throw new Error('Please select a valid goal.');
+        }
+        if (heightUnit !== 'cm' && heightUnit !== 'ft') {
+            throw new Error('Please select a valid height unit.');
+        }
+        if (weightUnit !== 'kg' && weightUnit !== 'lb') {
+            throw new Error('Please select a valid weight unit.');
         }
     }
 
@@ -175,7 +220,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 bmi: document.getElementById('calcBmi'),
                 category: document.getElementById('calcBmiCategory'),
                 bmr: document.getElementById('calcBmr'),
-                tdee: document.getElementById('calcTdee')
+                tdee: document.getElementById('calcTdee'),
+                target: document.getElementById('calcTargetCalories'),
+                macros: document.getElementById('calcMacroTargets')
             },
             {
                 bmi: document.getElementById('mainCalcBmi'),
@@ -193,13 +240,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 group.category.textContent = '--';
                 group.bmr.textContent = '--';
                 group.tdee.textContent = '--';
+                if (group.target) group.target.textContent = '--';
+                if (group.macros) group.macros.textContent = '--';
                 return;
             }
 
             group.bmi.textContent = metrics.bmi ?? '--';
             group.category.textContent = metrics.bmiCategory ?? '--';
+            group.category.classList.remove('metric-value-good', 'metric-value-warn', 'metric-value-danger', 'metric-value-neutral');
+            group.category.classList.add(getBMICategoryClass(metrics.bmiCategory));
             group.bmr.textContent = Number.isFinite(metrics.bmr) ? metrics.bmr.toLocaleString() : '--';
             group.tdee.textContent = Number.isFinite(metrics.tdee) ? metrics.tdee.toLocaleString() : '--';
+            if (group.target) {
+                group.target.textContent = Number.isFinite(metrics.targetCalories) ? metrics.targetCalories.toLocaleString() : '--';
+            }
+            if (group.macros) {
+                const macros = metrics.macroTargets;
+                group.macros.textContent = macros
+                    ? `P:${macros.proteinGrams}g C:${macros.carbsGrams}g F:${macros.fatGrams}g`
+                    : '--';
+            }
         });
     }
 
@@ -258,16 +318,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const age = parseInt(document.getElementById('age').value, 10);
         const gender = document.getElementById('gender').value;
         const activity = parseFloat(document.getElementById('activity').value);
+        const goalType = document.getElementById('goalType').value;
+        const heightUnit = document.getElementById('heightUnit').value;
+        const weightUnit = document.getElementById('weightUnit').value;
 
         try {
-            validateCalculatorInputs({ weight, height, age, activity, gender });
+            validateCalculatorInputs({ weight, height, age, activity, gender, goalType, heightUnit, weightUnit });
 
-            const bmi = calculateBMI(weight, height);
+            const heightCm = convertHeightToCm(height, heightUnit);
+            const weightKg = convertWeightToKg(weight, weightUnit);
+
+            const bmi = calculateBMI(weightKg, heightCm);
             const bmiCategory = getBMICategory(bmi);
-            const bmr = calculateBMR(weight, height, age, gender);
+            const bmr = calculateBMR(weightKg, heightCm, age, gender);
             const tdee = calculateTDEE(bmr, activity);
+            const targetCalories = Math.round(getGoalAdjustedCalories(tdee, goalType));
+            const macroTargets = calculateMacroTargets(targetCalories);
 
-            dailyGoal = Math.round(tdee);
+            dailyGoal = targetCalories;
             localStorage.setItem('dailyCalorieGoal', dailyGoal);
 
             // Keep calculated values for future UI display (dashboard/details)
@@ -275,7 +343,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 bmi: Number(bmi.toFixed(1)),
                 bmiCategory,
                 bmr: Math.round(bmr),
-                tdee: Math.round(tdee)
+                tdee: Math.round(tdee),
+                targetCalories,
+                goalType,
+                macroTargets
             }));
 
             calculatorModal.style.display = 'none';
