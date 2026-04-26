@@ -598,6 +598,106 @@ body {
     font-weight: 700;
 }
 
+.meal-detail-modal {
+    max-width: 640px;
+}
+
+.meal-detail-header {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.meal-detail-image {
+    width: 100%;
+    height: 130px;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border);
+}
+
+.meal-detail-summary h3 {
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+}
+
+.meal-detail-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+}
+
+.meal-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.meal-tag {
+    font-size: 0.68rem;
+    background: var(--lime-muted);
+    color: var(--lime);
+    border: 1px solid rgba(180, 212, 0, 0.25);
+    border-radius: 100px;
+    padding: 4px 8px;
+    font-weight: 700;
+}
+
+.meal-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.meal-detail-block {
+    border: 1px solid var(--border);
+    background: var(--black);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.meal-detail-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+}
+
+.meal-detail-value {
+    color: var(--lime);
+    font-weight: 700;
+}
+
+.meal-detail-section {
+    margin-top: 10px;
+}
+
+.meal-detail-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.meal-detail-list {
+    margin-left: 18px;
+    color: #d6d6d6;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.meal-detail-instructions {
+    color: #d6d6d6;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 1024px) {
     .nutrition-content {
@@ -633,6 +733,18 @@ body {
     }
 
     .discovery-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .meal-detail-header {
+        grid-template-columns: 1fr;
+    }
+
+    .meal-detail-image {
+        height: 180px;
+    }
+
+    .meal-detail-grid {
         grid-template-columns: 1fr;
     }
 }

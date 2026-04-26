@@ -180,6 +180,49 @@
         </main>
     </div>
 
+    <!-- MEAL DETAIL MODAL -->
+    <div class="modal-overlay" id="mealDetailModal">
+        <div class="modal-content meal-detail-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Meal Details</h2>
+                <button class="btn-small" id="closeMealDetailModal"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="meal-detail-header">
+                <div class="meal-detail-image" id="detailMealImage"></div>
+                <div class="meal-detail-summary">
+                    <h3 id="detailMealName">--</h3>
+                    <p class="meal-detail-meta" id="detailMealMeta">--</p>
+                    <div class="meal-detail-tags" id="detailMealTags"></div>
+                </div>
+            </div>
+
+            <div class="meal-detail-grid">
+                <div class="meal-detail-block">
+                    <div class="meal-detail-label">Calories</div>
+                    <div class="meal-detail-value" id="detailMealCalories">--</div>
+                </div>
+                <div class="meal-detail-block">
+                    <div class="meal-detail-label">Macros (P/C/F)</div>
+                    <div class="meal-detail-value" id="detailMealMacros">--</div>
+                </div>
+                <div class="meal-detail-block">
+                    <div class="meal-detail-label">Prep Time</div>
+                    <div class="meal-detail-value" id="detailMealPrepTime">--</div>
+                </div>
+            </div>
+
+            <div class="meal-detail-section">
+                <div class="meal-detail-section-title">Ingredients</div>
+                <ul class="meal-detail-list" id="detailMealIngredients"></ul>
+            </div>
+
+            <div class="meal-detail-section">
+                <div class="meal-detail-section-title">Instructions</div>
+                <p class="meal-detail-instructions" id="detailMealInstructions">--</p>
+            </div>
+        </div>
+    </div>
+
     <!-- CALCULATOR MODAL -->
     <div class="modal-overlay" id="calculatorModal">
         <div class="modal-content">

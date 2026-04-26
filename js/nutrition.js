@@ -8,12 +8,12 @@
 document.addEventListener('DOMContentLoaded', function () {
     // --- DATA ---
     const mealDatabase = [
-        { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, cuisine: "Western", dietTags: ["High-Protein", "Low-Carb"], ingredients: ["chicken", "lettuce", "tomato"], img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80" },
-        { id: 2, name: "Oatmeal with Berries", category: "Breakfast", calories: 280, protein: 8, carbs: 45, fat: 5, cuisine: "Western", dietTags: ["Vegetarian"], ingredients: ["oats", "berries", "milk"], img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200&q=80" },
-        { id: 3, name: "Salmon with Asparagus", category: "Dinner", calories: 420, protein: 30, carbs: 5, fat: 25, cuisine: "Mediterranean", dietTags: ["Keto", "Low-Carb", "High-Protein"], ingredients: ["salmon", "asparagus", "olive oil"], img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=200&q=80" },
-        { id: 4, name: "Avocado Toast", category: "Breakfast", calories: 310, protein: 7, carbs: 28, fat: 18, cuisine: "Western", dietTags: ["Vegetarian"], ingredients: ["bread", "avocado", "egg"], img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&q=80" },
-        { id: 5, name: "Beef & Broccoli", category: "Lunch", calories: 450, protein: 28, carbs: 35, fat: 15, cuisine: "Asian", dietTags: ["High-Protein"], ingredients: ["beef", "broccoli", "soy sauce"], img: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&q=80" },
-        { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, cuisine: "Mediterranean", dietTags: ["Vegetarian", "High-Protein"], ingredients: ["yogurt", "granola", "berries"], img: "https://images.unsplash.com/photo-1488477181946-6228a0291777?w=200&q=80" }
+        { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, cuisine: "Western", dietTags: ["High-Protein", "Low-Carb"], ingredients: ["Grilled chicken", "Romaine lettuce", "Cherry tomatoes", "Cucumber"], prepTime: "15 min", instructions: "Slice the grilled chicken, toss with vegetables, and finish with a light dressing.", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80" },
+        { id: 2, name: "Oatmeal with Berries", category: "Breakfast", calories: 280, protein: 8, carbs: 45, fat: 5, cuisine: "Western", dietTags: ["Vegetarian"], ingredients: ["Rolled oats", "Mixed berries", "Low-fat milk"], prepTime: "10 min", instructions: "Cook oats with milk until creamy, then top with fresh berries and serve warm.", img: "https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=200&q=80" },
+        { id: 3, name: "Salmon with Asparagus", category: "Dinner", calories: 420, protein: 30, carbs: 5, fat: 25, cuisine: "Mediterranean", dietTags: ["Keto", "Low-Carb", "High-Protein"], ingredients: ["Salmon fillet", "Asparagus", "Olive oil", "Lemon"], prepTime: "20 min", instructions: "Pan-sear salmon, roast asparagus, and finish with lemon juice before serving.", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=200&q=80" },
+        { id: 4, name: "Avocado Toast", category: "Breakfast", calories: 310, protein: 7, carbs: 28, fat: 18, cuisine: "Western", dietTags: ["Vegetarian"], ingredients: ["Whole grain bread", "Ripe avocado", "Poached egg"], prepTime: "12 min", instructions: "Toast bread, mash avocado with seasoning, spread evenly, and top with egg.", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=200&q=80" },
+        { id: 5, name: "Beef & Broccoli", category: "Lunch", calories: 450, protein: 28, carbs: 35, fat: 15, cuisine: "Asian", dietTags: ["High-Protein"], ingredients: ["Lean beef", "Broccoli florets", "Soy sauce", "Garlic"], prepTime: "25 min", instructions: "Stir-fry beef with garlic, add broccoli and sauce, then cook until tender-crisp.", img: "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&q=80" },
+        { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, cuisine: "Mediterranean", dietTags: ["Vegetarian", "High-Protein"], ingredients: ["Greek yogurt", "Granola", "Fresh berries", "Honey"], prepTime: "5 min", instructions: "Layer yogurt, berries, and granola in a glass, then drizzle with a little honey.", img: "https://images.unsplash.com/photo-1488477181946-6228a0291777?w=200&q=80" }
     ];
 
     let favorites = JSON.parse(localStorage.getItem('favoriteMeals')) || [];
@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Modals
     const calculatorModal = document.getElementById('calculatorModal');
     const goalModal = document.getElementById('goalModal');
+    const mealDetailModal = document.getElementById('mealDetailModal');
 
     // --- STATE ---
     let pendingCategory = null;
@@ -108,6 +109,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="result-name">${m.name}</span>
                     <span class="result-stats">${m.calories} kcal • ${m.category} • ${m.cuisine}</span>
                 </div>
+                <button class="btn-small" onclick="openMealDetails(${m.id})" title="View details">
+                    <i class="bi bi-eye"></i>
+                </button>
                 <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="Toggle favorite">
                     <i class="bi ${isFavoriteMeal(m.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
                 </button>
@@ -349,9 +353,43 @@ document.addEventListener('DOMContentLoaded', function () {
         renderDiscovery(mealSearch.value);
     };
 
+    function renderMealDetails(meal) {
+        document.getElementById('detailMealImage').style.backgroundImage = `url('${meal.img}')`;
+        document.getElementById('detailMealName').textContent = meal.name;
+        document.getElementById('detailMealMeta').textContent = `${meal.category} • ${meal.cuisine}`;
+        document.getElementById('detailMealCalories').textContent = `${meal.calories} kcal`;
+        document.getElementById('detailMealMacros').textContent = `P:${meal.protein}g C:${meal.carbs}g F:${meal.fat}g`;
+        document.getElementById('detailMealPrepTime').textContent = meal.prepTime || '--';
+        document.getElementById('detailMealInstructions').textContent = meal.instructions || '--';
+
+        const tagsEl = document.getElementById('detailMealTags');
+        tagsEl.innerHTML = (meal.dietTags || []).map((tag) => `<span class="meal-tag">${tag}</span>`).join('');
+
+        const ingredientsEl = document.getElementById('detailMealIngredients');
+        ingredientsEl.innerHTML = (meal.ingredients || []).map((ingredient) => `<li>${ingredient}</li>`).join('');
+    }
+
+    const closeMealDetail = () => {
+        if (mealDetailModal) mealDetailModal.style.display = 'none';
+    };
+
+    window.openMealDetails = (id) => {
+        const meal = mealDatabase.find((m) => m.id === id);
+        if (!meal || !mealDetailModal) return;
+        renderMealDetails(meal);
+        mealDetailModal.style.display = 'flex';
+    };
+
     // ── MODALS ──────────────────────────────────────────────────
     document.getElementById('openCalculatorBtn').onclick = () => calculatorModal.style.display = 'flex';
     document.getElementById('closeCalcModal').onclick = () => calculatorModal.style.display = 'none';
+    document.getElementById('closeMealDetailModal').onclick = closeMealDetail;
+    mealDetailModal?.addEventListener('click', (e) => {
+        if (e.target === mealDetailModal) closeMealDetail();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mealDetailModal?.style.display === 'flex') closeMealDetail();
+    });
 
     document.getElementById('editGoalBtn').onclick = () => {
         document.getElementById('manualGoal').value = dailyGoal;
