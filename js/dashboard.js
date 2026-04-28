@@ -176,116 +176,10 @@ document.addEventListener('DOMContentLoaded', function () {
     drawDonutRing('ringSteps',    58, BLUE,  '#1e1e1e', 100);
     drawDonutRing('ringCalories', 85, AMBER, '#1e1e1e', 100);
 
-    /* ── ACTIVITY BAR CHART ───────────────────────────────────── */
-    const actData   = [45, 30, 60, 0, 45, 90, 20];
-    const actLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const maxAct    = Math.max(...actData);
-    const peakDay   = actLabels[actData.indexOf(maxAct)];
-    setStat('activityPeak', `${peakDay} · ${maxAct} min`);
-
-    const actCtx = document.getElementById('activityChart');
-    if (actCtx) {
-        new Chart(actCtx, {
-            type: 'bar',
-            data: {
-                labels: actLabels,
-                datasets: [{
-                    label: 'Duration (min)',
-                    data: actData,
-                    backgroundColor: actData.map(v => v === maxAct ? LIME : LIME_BAR),
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    hoverBackgroundColor: LIME,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { ...tooltipDefaults, callbacks: { label: ctx => ` ${ctx.parsed.y} minutes` } }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: GRID }, ticks: { color: TEXT_MUTED }, border: { display: false } },
-                    x: { grid: { display: false }, ticks: { color: TEXT_MUTED }, border: { display: false } }
-                },
-                animation: { duration: 900, easing: 'easeOutQuart' }
-            }
-        });
-    }
-
-    /* ── STEPS LINE CHART ─────────────────────────────────────── */
-    const stepsData   = [8000, 7500, 10200, 6000, 8800, 12000, 9500];
-    const maxSteps    = Math.max(...stepsData);
-    const peakStepDay = actLabels[stepsData.indexOf(maxSteps)];
-    setStat('stepsPeak', `${peakStepDay} · ${(maxSteps / 1000).toFixed(1)}k`);
-
-    const stepsCtx = document.getElementById('stepsChart');
-    if (stepsCtx) {
-        new Chart(stepsCtx, {
-            type: 'line',
-            data: {
-                labels: actLabels,
-                datasets: [
-                    {
-                        label: 'Steps',
-                        data: stepsData,
-                        borderColor: LIME,
-                        backgroundColor: LIME_FILL,
-                        fill: true,
-                        tension: 0.45,
-                        pointRadius: 4,
-                        pointBackgroundColor: LIME,
-                        pointBorderColor: '#000',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 6,
-                        borderWidth: 2,
-                    },
-                    {
-                        label: 'Goal',
-                        data: Array(7).fill(10000),
-                        borderColor: 'rgba(255,255,255,0.12)',
-                        borderDash: [5, 4],
-                        borderWidth: 1.5,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        ...tooltipDefaults,
-                        callbacks: {
-                            label: ctx => ctx.datasetIndex === 0
-                                ? ` ${ctx.parsed.y.toLocaleString()} steps`
-                                : null
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: GRID },
-                        ticks: { color: TEXT_MUTED, callback: v => v >= 1000 ? (v / 1000) + 'k' : v },
-                        border: { display: false }
-                    },
-                    x: { grid: { display: false }, ticks: { color: TEXT_MUTED }, border: { display: false } }
-                },
-                animation: { duration: 1000, easing: 'easeOutQuart' }
-            }
-        });
-    }
-
-    /* ── COMBINED ACTIVITY + STEPS CHART ─────────────────────── */
-    const comboLabels = ['Apr 1','Apr 8','Apr 15','Apr 22','Apr 29','May 6','May 13'];
-    const durationData = [35, 20, 45, 40, 55, 30, 50];
-    const stepsDataCombo = [7.2, 5.8, 8.4, 7.8, 9.2, 6.5, 8.8];
+    /* ── COMBINED ACTIVITY + STEPS CHART (weekly) ────────────── */
+    const comboLabels    = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const durationData   = [45, 30, 60, 35, 45, 90, 20];
+    const stepsDataCombo = [8.0, 7.5, 10.2, 6.0, 8.8, 12.0, 9.5];
 
     const comboCtx = document.getElementById('comboChart');
     if (comboCtx) {
@@ -557,13 +451,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     /* ── RANGE PILL TOGGLE ────────────────────────────────────── */
-    const rangeLabels = { '7': 'Last 7 days', '30': 'Last 30 days', '90': 'Last 90 days' };
     document.querySelectorAll('.range-pill').forEach(btn => {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.range-pill').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            const label = document.getElementById('comboRangeLabel');
-            if (label) label.textContent = rangeLabels[this.dataset.range] || 'Last 30 days';
         });
     });
 
