@@ -25,28 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateUI();
 
-    // --- Settings Dropdown (Work In Progress) --- //
-    document.addEventListener("DOMContentLoaded", () => {
-        showSection("profileSection");
-    });
-
-    // --- Show Related Settings Section ---
-    function showSection(sectionId) {
-    document.querySelectorAll(".settings-group").forEach(section => {
-        section.classList.remove("active");
-    });
-
-    document.getElementById(sectionId).classList.add("active");
-    }
-    document.querySelectorAll(".dropdown a").forEach(link => {
-    link.addEventListener("click", () => {
-        document.querySelector(".dropdown").style.display = "none";
-    });
-});
-
-    // --- Settings Dropdown (Work In Progress) --- //
-
-
     // --- Tab A: Handle Profile Details Submission ---
     const profileDetailsForm = document.getElementById('profileDetailsForm');
     if (profileDetailsForm) {

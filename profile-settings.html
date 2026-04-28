@@ -48,7 +48,7 @@
                         <i class="bi bi-gear"></i> Settings
                     </button>
                     <div class="dropdown">
-                        <a href="#" onclick="showSection('profileSection')">Profile Settings</a>
+                        <a href="profile.html">View Public Profile</a>
                         <a href="#">Privacy Settings</a>
                         <a href="#" onclick="showSection('securitySection')">Password & Security</a>
                         <a href="#" onclick="showSection('dangerSection')">Deactivate Account</a>
@@ -75,88 +75,66 @@
                 </div>
             </section>
 
-            <section class="summary-grid">
-                <div class="summary-card">
-                    <span class="card-label">Followers</span>
-                    <span class="card-value" id="followersCount">--</span>
-                </div>
-                <div class="summary-card">
-                    <span class="card-label">Following</span>
-                    <span class="card-value" id="followingCount">--</span>
-                </div>
-            </section>
-
-            <!-- Section 1: Achievements & Badges -->
-            <section class="settings-section">
+            <!-- Section 1: Personal Info -->
+            <section class="settings-group">
                 <header class="section-header">
-                    <h3 class="section-title">Achievements & Badges</h3>
-                    <p class="section-subtitle">Track your fitness milestones and accomplishments.</p>
+                    <h3 class="section-title">Personal Information</h3>
+                    <p class="section-subtitle">Update your fitness profile details.</p>
                 </header>
-
-                <div class="achievements-grid">
-
-                    <!-- Achievement 1 -->
-                    <div class="achievement-card">
-                        <i class="bi bi-trophy-fill achievement-icon"></i>
-                        <div class="achievement-info">
-                            <h4>First Workout</h4>
-                            <p>Completed your very first workout session</p>
-                        </div>
+                <form id="profileDetailsForm" class="form-grid">
+                    <div class="form-group" style="grid-column: span 6;">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="fullName" value="Jordan Lee" required />
                     </div>
-
-                    <!-- Achievement 2 -->
-                    <div class="achievement-card">
-                        <i class="bi bi-award-fill achievement-icon"></i>
-                        <div class="achievement-info">
-                            <h4>7-Day Streak</h4>
-                            <p>Worked out consistently for 7 days</p>
-                        </div>
+                    <div class="form-group" style="grid-column: span 6;">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-input" id="email" value="jordan.lee@example.com" disabled />
                     </div>
-
-                    <!-- Achievement 3 -->
-                    <div class="achievement-card">
-                        <i class="bi bi-patch-check-fill achievement-icon"></i>
-                        <div class="achievement-info">
-                            <h4>Calorie Burner</h4>
-                            <p>Burned over 2000 calories</p>
-                        </div>
+                    <div class="form-group" style="grid-column: span 4;">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-input" id="age" value="28" />
                     </div>
-
-                    <!-- Achievement 4 -->
-                    <div class="achievement-card">
-                        <i class="bi bi-star-fill achievement-icon"></i>
-                        <div class="achievement-info">
-                            <h4>Goal Achiever</h4>
-                            <p>Reached your fitness goal</p>
-                        </div>
+                    <div class="form-group" style="grid-column: span 4;">
+                        <label class="form-label">Height (cm)</label>
+                        <input type="number" class="form-input" id="height" value="175" />
                     </div>
-                </div>
+                    <div class="form-group" style="grid-column: span 4;">
+                        <label class="form-label">Weight (kg)</label>
+                        <input type="number" class="form-input" id="weight" value="72" />
+                    </div>
+                    <div class="form-actions" style="grid-column: span 12;">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
+                </form>
             </section>
 
             <!-- Section 2: Security -->
-            <section class="settings-section">
+            <section class="settings-group">
                 <header class="section-header">
-                    <h3 class="section-title">My Posts</h3>
-                    <p class="section-subtitle">Share your fitness journey.</p>
+                    <h3 class="section-title">Security Settings</h3>
+                    <p class="section-subtitle">Manage your password and authentication.</p>
                 </header>
-
-                <div class="posts-container" id="postsContainer">
-                    
-                    <!-- Example Post -->
-                    <div class="post-card">
-                        <img src="https://media.tenor.com/DJIzIsfhL4wAAAAe/skaddale-running-away.png" class="post-image" />
-
-                        <div class="post-content">
-                            <p class="post-text">Just completed a 5km run today! Feeling amazing 💪</p>
-                            <span class="post-date">April 28, 2026</span>
-                        </div>
+                <form id="changePasswordForm" class="form-grid" style="max-width: 500px;">
+                    <div class="form-group" style="grid-column: span 12;">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" required />
                     </div>
-
-                </div>
+                    <div class="form-group" style="grid-column: span 12;">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" required />
+                    </div>
+                    <div class="form-group" style="grid-column: span 12;">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" class="form-input" required />
+                    </div>
+                    <div class="form-actions" style="grid-column: span 12;">
+                        <button type="submit" class="btn-primary">Update Password</button>
+                    </div>
+                </form>
             </section>
 
             <!-- Section 3: Danger Zone -->
-            <section class="settings-section danger-section">
+            <section class="settings-group danger-section">
                 <header class="section-header danger-header">
                     <h3 class="section-title">Danger Zone</h3>
                     <p class="section-subtitle">Permanently delete your account and all data.</p>
@@ -171,10 +149,6 @@
             </section>
         </main>
     </div>
-
-    <button class="fab" onclick="openPostModal()">
-        <i class="bi bi-plus-lg"></i>
-    </button>
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
