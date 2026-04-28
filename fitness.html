@@ -16,24 +16,8 @@
 
 <body>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">FitPulse</div>
-        <nav class="sidebar-nav">
-            <a href="dashboard.html" class="nav-item"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
-            <a href="fitness.html" class="nav-item active"><i class="bi bi-activity"></i><span>Workouts</span></a>
-            <a href="nutrition.html" class="nav-item"><i class="bi bi-egg-fried"></i><span>Nutrition</span></a>
-            <a href="notifications.html" class="nav-item"><i class="bi bi-bell-fill"></i><span>Alerts</span></a>
-            <a href="profile.html" class="nav-item"><i class="bi bi-person"></i><span>Profile</span></a>
-        </nav>
-        <a href="profile.html" class="sidebar-user">
-            <img src="https://i.pravatar.cc/40?img=12" alt="User" class="user-avatar" />
-            <div class="user-info">
-                <div style="font-size: 0.85rem; font-weight: 700;">Jordan Lee</div>
-                <div style="font-size: 0.7rem; color: var(--lime);">PRO MEMBER</div>
-            </div>
-        </a>
-    </aside>
+    <!-- sidebar -->
+    <div id="sidebar-placeholder"></div>
 
     <div class="main-wrapper">
         <header class="topbar">
@@ -144,8 +128,9 @@
         </div>
     </div>
 
-    <!-- Custom JS -->
-    <script src="js/fitness.js"></script>
+    <!-- sidebar loader -->
+    <script src="js/sidebar-loader.js"></script>
+    <script type="module" src="js/fitness.js"></script>
 </body>
 
 </html>

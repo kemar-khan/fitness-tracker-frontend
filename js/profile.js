@@ -1,4 +1,8 @@
-document.addEventListener('DOMContentLoaded', function () {
+import { getStoredUid, loadUserProfile, saveUserProfile } from './firestore-data.js';
+
+document.addEventListener('DOMContentLoaded', async function () {
+    const uid = getStoredUid();
+
     // Load existing user data or set defaults
     let userData = JSON.parse(localStorage.getItem('userData')) || {
         fullName: "Jane Doe",
@@ -15,12 +19,27 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('displayFullName').textContent = userData.fullName;
         document.getElementById('displayEmail').textContent = userData.email;
 
+        const sidebarName = document.getElementById('sidebar-user-name');
+    if (sidebarName) {
+        sidebarName.textContent = userData.fullName;
+    }
+    
         // Fill form fields
         document.getElementById('fullName').value = userData.fullName;
         document.getElementById('email').value = userData.email;
         document.getElementById('age').value = userData.age || '';
         document.getElementById('height').value = userData.height || '';
         document.getElementById('weight').value = userData.weight || '';
+    }
+
+    try {
+        const cloudProfile = await loadUserProfile(uid);
+        if (cloudProfile) {
+            userData = { ...userData, ...cloudProfile };
+            localStorage.setItem('userData', JSON.stringify(userData));
+        }
+    } catch (error) {
+        console.error('Unable to load profile from Firestore:', error);
     }
 
     updateUI();
@@ -39,6 +58,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Save to localStorage
             localStorage.setItem('userData', JSON.stringify(userData));
+            saveUserProfile(uid, userData).catch((error) => {
+                console.error('Unable to save profile to Firestore:', error);
+            });
 
             // Update header and notify user
             updateUI();
@@ -90,7 +112,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-            // Optional: clear session/auth tokens here
+            localStorage.removeItem('fitpulseAuthSession');
+            localStorage.removeItem('fitpulseUid');
             window.location.href = 'index.html';
         });
     }

@@ -4,8 +4,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 'use strict';
+import { getStoredUid, loadFitnessLogs, saveFitnessLogs } from './firestore-data.js';
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    const uid = getStoredUid();
     const activityFeed = document.getElementById('activityFeed');
     const addLogForm = document.getElementById('addLogForm');
     const activityTypeSelect = document.getElementById('activityType');
@@ -25,6 +27,23 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
 
     let logs = JSON.parse(localStorage.getItem('fitnessLogs')) || dummyLogs;
+
+    try {
+        const cloudLogs = await loadFitnessLogs(uid);
+        if (cloudLogs.length > 0) {
+            logs = cloudLogs;
+            localStorage.setItem('fitnessLogs', JSON.stringify(logs));
+        }
+    } catch (error) {
+        console.error('Unable to load fitness logs from Firestore:', error);
+    }
+
+    function persistLogs() {
+        localStorage.setItem('fitnessLogs', JSON.stringify(logs));
+        saveFitnessLogs(uid, logs).catch((error) => {
+            console.error('Unable to save fitness logs to Firestore:', error);
+        });
+    }
 
     // ── MODAL CONTROL ──────────────────────────────────────────
     if (openAddLogModal) {
@@ -162,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 logs.unshift(logData);
             }
 
-            localStorage.setItem('fitnessLogs', JSON.stringify(logs));
+            persistLogs();
             renderLogs();
             close();
             window.dispatchEvent(new Event('logsUpdated'));
@@ -191,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.deleteLog = function (id) {
         if (confirm('Delete this activity log?')) {
             logs = logs.filter(l => l.id !== id);
-            localStorage.setItem('fitnessLogs', JSON.stringify(logs));
+            persistLogs();
             renderLogs();
             window.dispatchEvent(new Event('logsUpdated'));
         }

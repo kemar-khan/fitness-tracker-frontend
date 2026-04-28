@@ -4,11 +4,12 @@
    ═══════════════════════════════════════════════════════════════ */
 
 'use strict';
+import { getStoredUid, loadFitnessLogs, loadNutritionState, loadUserProfile } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', function () {
+    const uid = getStoredUid();
     const LIME = '#B4D400';
     const LIME_MUTED = 'rgba(180, 212, 0, 0.1)';
-    const BLACK = '#000000';
     const TEXT_MUTED = '#888888';
 
     let activityChart, stepsChart;
@@ -102,14 +103,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function updateDashboard() {
-        const logs = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
-        const meals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
+    function updateDashboard(logs = null, meals = null) {
+        const localLogs = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
+        const localMeals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
+        const finalLogs = Array.isArray(logs) ? logs : localLogs;
+        const finalMeals = Array.isArray(meals) ? meals : localMeals;
 
         // 1. Update Summaries
-        const totalDuration = logs.reduce((sum, log) => sum + (parseInt(log.duration) || 0), 0);
-        const totalSteps = logs.reduce((sum, log) => sum + (parseInt(log.steps) || 0), 0);
-        const workoutsCount = logs.length;
+        const totalDuration = finalLogs.reduce((sum, log) => sum + (parseInt(log.duration) || 0), 0);
+        const totalSteps = finalLogs.reduce((sum, log) => sum + (parseInt(log.steps) || 0), 0);
+        const workoutsCount = finalLogs.length;
         const avgDuration = workoutsCount > 0 ? Math.round(totalDuration / workoutsCount) : 0;
 
         setStat('summaryWorkouts', workoutsCount);
@@ -118,10 +121,18 @@ document.addEventListener('DOMContentLoaded', function () {
         setStat('summaryAvg', avgDuration);
 
         // 2. Render Activity Feed
-        renderActivityFeed(logs);
+        renderActivityFeed(finalLogs);
 
         // 3. Render Meals Feed
-        renderMealsFeed(meals);
+        renderMealsFeed(finalMeals);
+    }
+
+    function updateSidebarUser(userData = {}) {
+        const nameEl = document.getElementById('sidebar-user-name');
+
+        const fullName = (userData.fullName || '').trim() || 'FitPulse Member';
+
+        if (nameEl) nameEl.textContent = fullName;
     }
 
     function setStat(id, val) {
@@ -178,11 +189,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('');
     }
 
-    // Initialize
-    initCharts();
-    updateDashboard();
+    async function initDashboardPage() {
+        const localUser = JSON.parse(localStorage.getItem('userData')) || {};
+        updateSidebarUser(localUser);
+
+        try {
+            const [cloudProfile, cloudLogs, cloudNutrition] = await Promise.all([
+                loadUserProfile(uid),
+                loadFitnessLogs(uid),
+                loadNutritionState(uid)
+            ]);
+
+            if (cloudProfile) {
+                const mergedUser = { ...localUser, ...cloudProfile };
+                localStorage.setItem('userData', JSON.stringify(mergedUser));
+                updateSidebarUser(mergedUser);
+            }
+
+            if (Array.isArray(cloudLogs) && cloudLogs.length > 0) {
+                localStorage.setItem('fitnessLogs', JSON.stringify(cloudLogs));
+            }
+
+            if (cloudNutrition && Array.isArray(cloudNutrition.trackedMeals)) {
+                localStorage.setItem('trackedMeals', JSON.stringify(cloudNutrition.trackedMeals));
+            }
+        } catch (error) {
+            console.error('Unable to sync dashboard data from Firestore:', error);
+        }
+
+        initCharts();
+        updateDashboard();
+    }
+
+    initDashboardPage();
+    document.addEventListener('sidebarLoaded', () => {
+        updateSidebarUser(JSON.parse(localStorage.getItem('userData')) || {});
+    });
 
     // Re-render when data changes (broadcast from other pages)
-    window.addEventListener('storage', updateDashboard);
+    window.addEventListener('storage', () => {
+        updateSidebarUser(JSON.parse(localStorage.getItem('userData')) || {});
+        updateDashboard();
+    });
     window.addEventListener('logsUpdated', updateDashboard);
 });
