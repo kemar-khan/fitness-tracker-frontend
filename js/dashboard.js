@@ -450,13 +450,6 @@ document.addEventListener('DOMContentLoaded', function () {
         setAIText(tip);
     });
 
-    /* ── RANGE PILL TOGGLE ────────────────────────────────────── */
-    document.querySelectorAll('.range-pill').forEach(btn => {
-        btn.addEventListener('click', function () {
-            document.querySelectorAll('.range-pill').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
 
     /* ── DATA FROM LOCALSTORAGE ───────────────────────────────── */
     function updateDashboard() {
