@@ -60,7 +60,13 @@ document.addEventListener('DOMContentLoaded', function () {
             countEl.textContent = items.length;
 
             if (items.length === 0) {
-                container.innerHTML = `<p style="font-size: 0.8rem; color: #444; padding: 10px 0;">No ${cat.toLowerCase()} logged.</p>`;
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-title">No meals logged yet</div>
+                        <div class="empty-subtitle">Search a meal on the right and tap + to add your first entry.</div>
+                        <button class="empty-cta" type="button" onclick="focusMealSearch()">Search & add a meal</button>
+                    </div>
+                `;
             } else {
                 container.innerHTML = items.map(m => `
                     <div class="item-card">
@@ -100,7 +106,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (filtered.length === 0) {
-            mealResults.innerHTML = '<p class="discovery-empty">No meals matched your current search/filters.</p>';
+            mealResults.innerHTML = `
+                <div class="empty-state empty-state-compact">
+                    <div class="empty-title">No matches found</div>
+                    <div class="empty-subtitle">Try clearing filters or searching by ingredient (e.g. “chicken”, “oats”).</div>
+                    <button class="empty-cta" type="button" onclick="clearDiscoveryFilters()">Clear filters</button>
+                </div>
+            `;
             return;
         }
 
@@ -131,7 +143,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderFavorites() {
         if (!favoritesList) return;
         if (favorites.length === 0) {
-            favoritesList.innerHTML = '<p style="font-size: 0.8rem; color: #444;">No favorites yet.</p>';
+            favoritesList.innerHTML = `
+                <div class="empty-state empty-state-compact">
+                    <div class="empty-title">No favorites yet</div>
+                    <div class="empty-subtitle">Tap the heart on a meal to save it here for quick access.</div>
+                </div>
+            `;
             return;
         }
         favoritesList.innerHTML = favorites.map(m => `
@@ -219,31 +236,82 @@ document.addEventListener('DOMContentLoaded', function () {
         return 'metric-value-neutral';
     }
 
-    function validateCalculatorInputs({ weight, height, age, activity, gender, goalType, heightUnit, weightUnit }) {
-        if (!Number.isFinite(weight) || weight <= 0 || weight > 500) {
-            throw new Error('Please enter a valid weight.');
+    function setFieldError(inputId, errorId, message) {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (input) input.classList.add('invalid');
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.add('visible');
         }
-        if (!Number.isFinite(height) || height <= 0 || height > 300) {
-            throw new Error('Please enter a valid height.');
+    }
+
+    function clearFieldError(inputId, errorId) {
+        const input = document.getElementById(inputId);
+        const errorEl = document.getElementById(errorId);
+        if (input) input.classList.remove('invalid');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.remove('visible');
         }
+    }
+
+    function clearCalculatorErrors() {
+        clearFieldError('age', 'ageError');
+        clearFieldError('height', 'heightError');
+        clearFieldError('weight', 'weightError');
+        clearFieldError('activity', 'activityError');
+        clearFieldError('goalType', 'goalTypeError');
+    }
+
+    function validateCalculatorForm({ weight, height, age, activity, gender, goalType, heightUnit, weightUnit }) {
+        const errors = {};
+
         if (!Number.isInteger(age) || age < 10 || age > 120) {
-            throw new Error('Please enter a valid age between 10 and 120.');
+            errors.age = 'Enter an age between 10 and 120.';
         }
+
+        if (!Number.isFinite(height) || height <= 0) {
+            errors.height = 'Enter a valid height.';
+        }
+
+        if (!Number.isFinite(weight) || weight <= 0) {
+            errors.weight = 'Enter a valid weight.';
+        }
+
         if (!Number.isFinite(activity) || activity < 1.2 || activity > 2.0) {
-            throw new Error('Please select a valid activity level.');
+            errors.activity = 'Select an activity level.';
         }
+
         if (gender !== 'male' && gender !== 'female') {
-            throw new Error('Please select a valid gender.');
+            errors.gender = 'Select a gender.';
         }
+
         if (goalType !== 'lose' && goalType !== 'maintain' && goalType !== 'gain') {
-            throw new Error('Please select a valid goal.');
+            errors.goalType = 'Select a goal.';
         }
+
         if (heightUnit !== 'cm' && heightUnit !== 'ft') {
-            throw new Error('Please select a valid height unit.');
+            errors.height = 'Select a valid height unit.';
         }
+
         if (weightUnit !== 'kg' && weightUnit !== 'lb') {
-            throw new Error('Please select a valid weight unit.');
+            errors.weight = 'Select a valid weight unit.';
         }
+
+        // Only enforce realistic ranges after unit selection is known
+        const heightCm = convertHeightToCm(height, heightUnit);
+        const weightKg = convertWeightToKg(weight, weightUnit);
+
+        if (Number.isFinite(heightCm) && (heightCm < 100 || heightCm > 250)) {
+            errors.height = 'Height looks off. Please check the number/unit.';
+        }
+
+        if (Number.isFinite(weightKg) && (weightKg < 30 || weightKg > 250)) {
+            errors.weight = 'Weight looks off. Please check the number/unit.';
+        }
+
+        return errors;
     }
 
     function getStoredCalorieMetrics() {
@@ -417,6 +485,20 @@ document.addEventListener('DOMContentLoaded', function () {
         window.openMealDetails(id);
     };
 
+    window.focusMealSearch = () => {
+        mealSearch?.focus();
+        mealSearch?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    window.clearDiscoveryFilters = () => {
+        if (filterMealType) filterMealType.value = 'All';
+        if (filterDiet) filterDiet.value = 'All';
+        if (filterCuisine) filterCuisine.value = 'All';
+        if (filterMaxCalories) filterMaxCalories.value = '';
+        renderDiscovery(mealSearch?.value || '');
+        window.focusMealSearch();
+    };
+
     // ── MODALS ──────────────────────────────────────────────────
     document.getElementById('openCalculatorBtn').onclick = () => calculatorModal.style.display = 'flex';
     document.getElementById('closeCalcModal').onclick = () => calculatorModal.style.display = 'none';
@@ -449,6 +531,14 @@ document.addEventListener('DOMContentLoaded', function () {
         goalModal.style.display = 'flex';
     };
     document.getElementById('closeGoalModal').onclick = () => goalModal.style.display = 'none';
+    document.getElementById('age')?.addEventListener('input', () => clearFieldError('age', 'ageError'));
+    document.getElementById('height')?.addEventListener('input', () => clearFieldError('height', 'heightError'));
+    document.getElementById('weight')?.addEventListener('input', () => clearFieldError('weight', 'weightError'));
+    document.getElementById('activity')?.addEventListener('change', () => clearFieldError('activity', 'activityError'));
+    document.getElementById('goalType')?.addEventListener('change', () => clearFieldError('goalType', 'goalTypeError'));
+    document.getElementById('heightUnit')?.addEventListener('change', () => clearFieldError('height', 'heightError'));
+    document.getElementById('weightUnit')?.addEventListener('change', () => clearFieldError('weight', 'weightError'));
+    document.getElementById('manualGoal')?.addEventListener('input', () => clearFieldError('manualGoal', 'manualGoalError'));
 
     // Forms
     document.getElementById('calorieForm').onsubmit = (e) => {
@@ -463,7 +553,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const weightUnit = document.getElementById('weightUnit').value;
 
         try {
-            validateCalculatorInputs({ weight, height, age, activity, gender, goalType, heightUnit, weightUnit });
+            clearCalculatorErrors();
+            const errors = validateCalculatorForm({ weight, height, age, activity, gender, goalType, heightUnit, weightUnit });
+            if (Object.keys(errors).length > 0) {
+                if (errors.age) setFieldError('age', 'ageError', errors.age);
+                if (errors.height) setFieldError('height', 'heightError', errors.height);
+                if (errors.weight) setFieldError('weight', 'weightError', errors.weight);
+                if (errors.activity) setFieldError('activity', 'activityError', errors.activity);
+                if (errors.goalType) setFieldError('goalType', 'goalTypeError', errors.goalType);
+                return;
+            }
 
             const heightCm = convertHeightToCm(height, heightUnit);
             const weightKg = convertWeightToKg(weight, weightUnit);
@@ -493,15 +592,17 @@ document.addEventListener('DOMContentLoaded', function () {
             updateStats();
             renderCalorieMetrics();
         } catch (error) {
-            alert(error.message || 'Unable to calculate calories. Please check your inputs.');
+            // Unexpected failure (not user-fixable) — keep as alert.
+            alert('Something went wrong while calculating. Please try again.');
         }
     };
 
     document.getElementById('goalForm').onsubmit = (e) => {
         e.preventDefault();
         const manualGoal = parseInt(document.getElementById('manualGoal').value, 10);
+        clearFieldError('manualGoal', 'manualGoalError');
         if (!Number.isInteger(manualGoal) || manualGoal < 800 || manualGoal > 10000) {
-            alert('Please enter a valid calorie goal between 800 and 10,000.');
+            setFieldError('manualGoal', 'manualGoalError', 'Enter a goal between 800 and 10,000 calories.');
             return;
         }
         dailyGoal = manualGoal;
