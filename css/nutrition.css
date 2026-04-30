@@ -698,6 +698,59 @@ body {
     line-height: 1.6;
 }
 
+.meal-detail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.portion-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.portion-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-right: 2px;
+}
+
+.portion-btn {
+    border: 1px solid var(--border);
+    background: var(--black);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+    line-height: 1;
+}
+
+.portion-btn:hover {
+    border-color: var(--lime);
+}
+
+.portion-btn.active {
+    background: var(--lime);
+    color: var(--black);
+    border-color: var(--lime);
+}
+
+.meal-detail-add {
+    padding: 10px 16px;
+    border-radius: 12px;
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 1024px) {
     .nutrition-content {

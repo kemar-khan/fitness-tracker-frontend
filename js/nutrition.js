@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- STATE ---
     let pendingCategory = null;
+    let detailMealId = null;
+    let detailPortion = 1;
 
     // ── INITIALIZATION ──────────────────────────────────────────
     function init() {
@@ -65,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="item-icon"><i class="bi bi-check-circle-fill"></i></div>
                         <div class="item-body">
                             <div class="item-title">${m.name}</div>
-                            <div class="item-meta">${m.calories} kcal • P:${m.protein}g C:${m.carbs}g F:${m.fat}g</div>
+                            <div class="item-meta">${m.calories} kcal • P:${m.protein}g C:${m.carbs}g F:${m.fat}g${m.portion && m.portion !== 1 ? ` • ${m.portion}x` : ''}</div>
                         </div>
                         <div class="item-actions">
                             <button class="btn-small danger" onclick="removeTracked('${m.trackedAt}')"><i class="bi bi-trash"></i></button>
@@ -115,7 +117,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="Toggle favorite">
                     <i class="bi ${isFavoriteMeal(m.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
                 </button>
-                <button class="btn-small" onclick="trackFromSearch(${m.id})"><i class="bi bi-plus-lg"></i></button>
+                <button class="btn-small" onclick="openAddMeal(${m.id})" title="Add with portion">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
             </div>
         `).join('');
     }
@@ -136,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="fav-name">${m.name}</span>
                     <span class="fav-stats">${m.calories} kcal • ${m.category}</span>
                 </div>
-                <button class="btn-small" onclick="trackFromSearch(${m.id})"><i class="bi bi-plus-lg"></i></button>
+                <button class="btn-small" onclick="openAddMeal(${m.id})" title="Add with portion"><i class="bi bi-plus-lg"></i></button>
             </div>
         `).join('');
     }
@@ -311,17 +315,30 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => mealSearch.style.borderColor = '', 1500);
     };
 
-    window.trackFromSearch = (id) => {
-        const meal = mealDatabase.find(m => m.id === id);
-        if (!meal) return;
+    function scaleMeal(meal, portion) {
+        return {
+            calories: Math.round(meal.calories * portion),
+            protein: Math.round(meal.protein * portion),
+            carbs: Math.round(meal.carbs * portion),
+            fat: Math.round(meal.fat * portion)
+        };
+    }
 
-        const newEntry = {
+    function addMealToJournal(meal, portion) {
+        const scaled = scaleMeal(meal, portion);
+        const entry = {
             ...meal,
+            ...scaled,
+            baseCalories: meal.calories,
+            baseProtein: meal.protein,
+            baseCarbs: meal.carbs,
+            baseFat: meal.fat,
+            portion,
             category: pendingCategory || meal.category,
             trackedAt: new Date().toISOString()
         };
 
-        trackedMeals.unshift(newEntry);
+        trackedMeals.unshift(entry);
         localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
 
         pendingCategory = null;
@@ -329,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         init();
         window.dispatchEvent(new Event('logsUpdated'));
-    };
+    }
 
     window.removeTracked = (timestamp) => {
         trackedMeals = trackedMeals.filter(m => m.trackedAt !== timestamp);
@@ -354,11 +371,12 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     function renderMealDetails(meal) {
+        detailMealId = meal.id;
+        detailPortion = 1;
         document.getElementById('detailMealImage').style.backgroundImage = `url('${meal.img}')`;
         document.getElementById('detailMealName').textContent = meal.name;
         document.getElementById('detailMealMeta').textContent = `${meal.category} • ${meal.cuisine}`;
-        document.getElementById('detailMealCalories').textContent = `${meal.calories} kcal`;
-        document.getElementById('detailMealMacros').textContent = `P:${meal.protein}g C:${meal.carbs}g F:${meal.fat}g`;
+        updateDetailNutrition(meal, detailPortion);
         document.getElementById('detailMealPrepTime').textContent = meal.prepTime || '--';
         document.getElementById('detailMealInstructions').textContent = meal.instructions || '--';
 
@@ -367,6 +385,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const ingredientsEl = document.getElementById('detailMealIngredients');
         ingredientsEl.innerHTML = (meal.ingredients || []).map((ingredient) => `<li>${ingredient}</li>`).join('');
+
+        setActivePortionButton(detailPortion);
+    }
+
+    function updateDetailNutrition(meal, portion) {
+        const scaled = scaleMeal(meal, portion);
+        document.getElementById('detailMealCalories').textContent = `${scaled.calories} kcal`;
+        document.getElementById('detailMealMacros').textContent = `P:${scaled.protein}g C:${scaled.carbs}g F:${scaled.fat}g`;
+    }
+
+    function setActivePortionButton(portion) {
+        document.querySelectorAll('.portion-btn').forEach((btn) => {
+            const btnPortion = parseFloat(btn.dataset.portion);
+            btn.classList.toggle('active', btnPortion === portion);
+        });
     }
 
     const closeMealDetail = () => {
@@ -380,10 +413,30 @@ document.addEventListener('DOMContentLoaded', function () {
         mealDetailModal.style.display = 'flex';
     };
 
+    window.openAddMeal = (id) => {
+        window.openMealDetails(id);
+    };
+
     // ── MODALS ──────────────────────────────────────────────────
     document.getElementById('openCalculatorBtn').onclick = () => calculatorModal.style.display = 'flex';
     document.getElementById('closeCalcModal').onclick = () => calculatorModal.style.display = 'none';
     document.getElementById('closeMealDetailModal').onclick = closeMealDetail;
+    document.getElementById('addMealFromDetailBtn')?.addEventListener('click', () => {
+        const meal = mealDatabase.find((m) => m.id === detailMealId);
+        if (!meal) return;
+        addMealToJournal(meal, detailPortion);
+        closeMealDetail();
+    });
+    document.querySelectorAll('.portion-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const nextPortion = parseFloat(btn.dataset.portion);
+            if (!Number.isFinite(nextPortion)) return;
+            detailPortion = nextPortion;
+            setActivePortionButton(detailPortion);
+            const meal = mealDatabase.find((m) => m.id === detailMealId);
+            if (meal) updateDetailNutrition(meal, detailPortion);
+        });
+    });
     mealDetailModal?.addEventListener('click', (e) => {
         if (e.target === mealDetailModal) closeMealDetail();
     });
