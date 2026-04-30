@@ -944,6 +944,180 @@ body {
     border-color: var(--lime);
 }
 
+/* ── CLICKABLE CARDS ─────────────────────────────────────────── */
+.clickable { cursor: pointer; }
+.clickable:hover { border-color: rgba(180,212,0,0.4) !important; }
+
+.goal-ring-item.clickable:hover .goal-ring-wrap canvas {
+    filter: brightness(1.15);
+}
+
+/* Footer "View Details" bar injected into chart cards */
+.chart-details-bar {
+    text-align: center;
+    padding: 10px 24px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--lime);
+    cursor: pointer;
+    border-top: 1px solid var(--border);
+    margin: 14px -24px -22px;
+    transition: background var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.chart-details-bar:hover { background: var(--lime-muted); }
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+.modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.modal-card {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 500px;
+    max-height: 82vh;
+    overflow-y: auto;
+    transform: translateY(18px) scale(0.97);
+    transition: transform 0.22s ease;
+}
+.modal-overlay.open .modal-card { transform: translateY(0) scale(1); }
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface-alt);
+    z-index: 1;
+}
+
+.modal-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.modal-close {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+.modal-close:hover { color: var(--text); border-color: var(--border-2); }
+
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Modal stat row */
+.modal-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+.modal-stat {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    text-align: center;
+}
+.modal-stat-val {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--lime);
+    line-height: 1;
+    margin-bottom: 5px;
+}
+.modal-stat-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Modal section title */
+.modal-section-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+/* Modal bar rows */
+.modal-bar-row { display: flex; flex-direction: column; gap: 10px; }
+.modal-bar-item { display: flex; align-items: center; gap: 10px; }
+.modal-bar-label { font-size: 0.75rem; color: var(--text-muted); width: 72px; flex-shrink: 0; }
+.modal-bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.modal-bar-fill { height: 100%; border-radius: 3px; transition: width 0.7s ease 0.1s; }
+.modal-bar-value { font-size: 0.75rem; font-weight: 700; color: var(--text); width: 56px; text-align: right; flex-shrink: 0; }
+
+/* Modal list */
+.modal-list { display: flex; flex-direction: column; gap: 7px; }
+.modal-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.80rem;
+    gap: 10px;
+}
+.modal-list-label { color: var(--text-muted); }
+.modal-list-value { font-weight: 700; color: var(--text); white-space: nowrap; }
+.modal-list-value.accent { color: var(--lime); }
+
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 1280px) {
     .stats-grid  { grid-template-columns: repeat(2, 1fr); }
