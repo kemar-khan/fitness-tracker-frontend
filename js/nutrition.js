@@ -33,11 +33,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const calculatorModal = document.getElementById('calculatorModal');
     const goalModal = document.getElementById('goalModal');
     const mealDetailModal = document.getElementById('mealDetailModal');
+    const customMealModal = document.getElementById('customMealModal');
 
     // --- STATE ---
     let pendingCategory = null;
     let detailMealId = null;
     let detailPortion = 1;
+    let customCategory = null;
+    let customPortion = 1;
 
     // ── INITIALIZATION ──────────────────────────────────────────
     function init() {
@@ -63,8 +66,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-title">No meals logged yet</div>
-                        <div class="empty-subtitle">Search a meal on the right and tap + to add your first entry.</div>
-                        <button class="empty-cta" type="button" onclick="focusMealSearch()">Search & add a meal</button>
+                        <div class="empty-subtitle">Add your first ${cat.toLowerCase()} by searching on the right.</div>
+                        <button class="empty-cta" type="button" onclick="window.quickAdd('${cat}')">Add ${cat}</button>
                     </div>
                 `;
             } else {
@@ -110,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="empty-state empty-state-compact">
                     <div class="empty-title">No matches found</div>
                     <div class="empty-subtitle">Try clearing filters or searching by ingredient (e.g. “chicken”, “oats”).</div>
-                    <button class="empty-cta" type="button" onclick="clearDiscoveryFilters()">Clear filters</button>
+                    <button class="empty-cta" type="button" onclick="window.clearDiscoveryFilters()">Clear filters</button>
                 </div>
             `;
             return;
@@ -499,10 +502,41 @@ document.addEventListener('DOMContentLoaded', function () {
         window.focusMealSearch();
     };
 
+    function setActiveCustomPortionButton(portion) {
+        customMealModal?.querySelectorAll('.custom-portion-btn').forEach((btn) => {
+            const btnPortion = parseFloat(btn.dataset.portion);
+            btn.classList.toggle('active', btnPortion === portion);
+        });
+    }
+
+    function closeCustomMeal() {
+        if (customMealModal) customMealModal.style.display = 'none';
+    }
+
+    window.openCustomMeal = (category) => {
+        customCategory = category;
+        customPortion = 1;
+
+        const label = document.getElementById('customMealCategoryLabel');
+        if (label) label.textContent = category;
+
+        document.getElementById('customMealForm')?.reset();
+        clearFieldError('customMealName', 'customMealNameError');
+        clearFieldError('customMealCalories', 'customMealCaloriesError');
+        setActiveCustomPortionButton(customPortion);
+
+        if (customMealModal) customMealModal.style.display = 'flex';
+        document.getElementById('customMealName')?.focus();
+    };
+
     // ── MODALS ──────────────────────────────────────────────────
     document.getElementById('openCalculatorBtn').onclick = () => calculatorModal.style.display = 'flex';
     document.getElementById('closeCalcModal').onclick = () => calculatorModal.style.display = 'none';
     document.getElementById('closeMealDetailModal').onclick = closeMealDetail;
+    document.getElementById('closeCustomMealModal')?.addEventListener('click', closeCustomMeal);
+    customMealModal?.addEventListener('click', (e) => {
+        if (e.target === customMealModal) closeCustomMeal();
+    });
     document.getElementById('addMealFromDetailBtn')?.addEventListener('click', () => {
         const meal = mealDatabase.find((m) => m.id === detailMealId);
         if (!meal) return;
@@ -524,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && mealDetailModal?.style.display === 'flex') closeMealDetail();
+        if (e.key === 'Escape' && customMealModal?.style.display === 'flex') closeCustomMeal();
     });
 
     document.getElementById('editGoalBtn').onclick = () => {
@@ -539,6 +574,62 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('heightUnit')?.addEventListener('change', () => clearFieldError('height', 'heightError'));
     document.getElementById('weightUnit')?.addEventListener('change', () => clearFieldError('weight', 'weightError'));
     document.getElementById('manualGoal')?.addEventListener('input', () => clearFieldError('manualGoal', 'manualGoalError'));
+    document.getElementById('customMealName')?.addEventListener('input', () => clearFieldError('customMealName', 'customMealNameError'));
+    document.getElementById('customMealCalories')?.addEventListener('input', () => clearFieldError('customMealCalories', 'customMealCaloriesError'));
+
+    document.getElementById('customMealForm')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const name = (document.getElementById('customMealName')?.value || '').trim();
+        const calories = parseFloat(document.getElementById('customMealCalories')?.value);
+        const protein = parseFloat(document.getElementById('customMealProtein')?.value) || 0;
+        const carbs = parseFloat(document.getElementById('customMealCarbs')?.value) || 0;
+        const fat = parseFloat(document.getElementById('customMealFat')?.value) || 0;
+
+        clearFieldError('customMealName', 'customMealNameError');
+        clearFieldError('customMealCalories', 'customMealCaloriesError');
+
+        let hasError = false;
+        if (!name) {
+            setFieldError('customMealName', 'customMealNameError', 'Enter a meal name.');
+            hasError = true;
+        }
+        if (!Number.isFinite(calories) || calories <= 0) {
+            setFieldError('customMealCalories', 'customMealCaloriesError', 'Enter valid calories.');
+            hasError = true;
+        }
+        if (hasError) return;
+
+        // Force category to the selected section and reuse the same journal pipeline
+        pendingCategory = customCategory || 'Snack';
+
+        const customMeal = {
+            id: Date.now(),
+            name,
+            category: pendingCategory,
+            calories: Math.round(calories),
+            protein: Math.max(0, Math.round(protein)),
+            carbs: Math.max(0, Math.round(carbs)),
+            fat: Math.max(0, Math.round(fat)),
+            cuisine: 'Custom',
+            dietTags: ['Custom'],
+            ingredients: [],
+            prepTime: '--',
+            instructions: ''
+        };
+
+        addMealToJournal(customMeal, customPortion);
+        closeCustomMeal();
+    });
+
+    customMealModal?.querySelectorAll('.custom-portion-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const nextPortion = parseFloat(btn.dataset.portion);
+            if (!Number.isFinite(nextPortion)) return;
+            customPortion = nextPortion;
+            setActiveCustomPortionButton(customPortion);
+        });
+    });
 
     // Forms
     document.getElementById('calorieForm').onsubmit = (e) => {

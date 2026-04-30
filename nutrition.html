@@ -99,8 +99,9 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-sunrise"></i> Breakfast <span class="meal-count"
                                 id="countBreakfast">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Breakfast')"><i class="bi bi-plus-lg"></i>
-                            Add</button>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Breakfast')"><i
+                                class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsBreakfast">
                         <!-- Loaded by JS -->
@@ -112,7 +113,8 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-sun"></i> Lunch <span class="meal-count"
                                 id="countLunch">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Lunch')"><i class="bi bi-plus-lg"></i> Add</button>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Lunch')"><i class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsLunch"></div>
                 </div>
@@ -122,8 +124,9 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-moon-stars"></i> Dinner <span class="meal-count"
                                 id="countDinner">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Dinner')"><i class="bi bi-plus-lg"></i>
-                            Add</button>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Dinner')"><i
+                                class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsDinner"></div>
                 </div>
@@ -133,7 +136,8 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-apple"></i> Snacks <span class="meal-count"
                                 id="countSnack">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Snack')"><i class="bi bi-plus-lg"></i> Add</button>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Snack')"><i class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsSnack"></div>
                 </div>
@@ -242,6 +246,64 @@
                     <i class="bi bi-plus-lg"></i> Add to Journal
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM MEAL MODAL -->
+    <div class="modal-overlay" id="customMealModal">
+        <div class="modal-content custom-meal-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Log Custom Meal</h2>
+                <button class="btn-small" id="closeCustomMealModal"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <div class="custom-meal-hint">
+                Adding to <strong id="customMealCategoryLabel">--</strong>
+            </div>
+
+            <form id="customMealForm">
+                <div class="form-group">
+                    <label class="form-label">Meal Name</label>
+                    <input type="text" id="customMealName" class="form-input" placeholder="e.g. Nasi Lemak" required />
+                    <div class="field-error" id="customMealNameError" aria-live="polite"></div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Calories</label>
+                        <input type="number" id="customMealCalories" class="form-input" placeholder="600" required />
+                        <div class="field-error" id="customMealCaloriesError" aria-live="polite"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Protein (g)</label>
+                        <input type="number" id="customMealProtein" class="form-input" placeholder="20" />
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Carbs (g)</label>
+                        <input type="number" id="customMealCarbs" class="form-input" placeholder="70" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fat (g)</label>
+                        <input type="number" id="customMealFat" class="form-input" placeholder="25" />
+                    </div>
+                </div>
+
+                <div class="meal-detail-actions">
+                    <div class="portion-picker" aria-label="Portion size">
+                        <span class="portion-label">Portion</span>
+                        <button type="button" class="portion-btn active custom-portion-btn" data-portion="1">1x</button>
+                        <button type="button" class="portion-btn custom-portion-btn" data-portion="0.5">0.5x</button>
+                        <button type="button" class="portion-btn custom-portion-btn" data-portion="1.5">1.5x</button>
+                        <button type="button" class="portion-btn custom-portion-btn" data-portion="2">2x</button>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        <i class="bi bi-plus-lg"></i> Add to Journal
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

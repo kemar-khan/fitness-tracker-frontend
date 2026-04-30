@@ -592,6 +592,21 @@ body {
     color: #ff6b6b;
 }
 
+.btn-section-add {
+    width: auto;
+    height: auto;
+    min-height: 34px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-left: 10px;
+}
+
 /* ── MODALS (Reused) ────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;
@@ -807,6 +822,17 @@ body {
 .meal-detail-add {
     padding: 10px 16px;
     border-radius: 12px;
+}
+
+.custom-meal-modal {
+    max-width: 560px;
+}
+
+.custom-meal-hint {
+    margin-top: 6px;
+    margin-bottom: 14px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
