@@ -721,9 +721,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div>
                     <div class="modal-section-title">BMI Range</div>
                     <div class="modal-bar-row">
-                        <div class="modal-bar-item"><span class="modal-bar-label">Underweight</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:20%;background:#38BDF8"></div></div><span class="modal-bar-value">< 18.5</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label" style="color:var(--lime)">Normal ✓</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:74%;background:var(--lime)"></div></div><span class="modal-bar-value" style="color:var(--lime)">22.4</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label">Overweight</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:0%"></div></div><span class="modal-bar-value">25–30</span></div>
+                        <div class="modal-bar-item"><span class="modal-bar-label" style="width:90px">Underweight</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:20%;background:#38BDF8"></div></div><span class="modal-bar-value">< 18.5</span></div>
+                        <div class="modal-bar-item"><span class="modal-bar-label" style="color:var(--lime);width:90px">Normal ✓</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:74%;background:var(--lime)"></div></div><span class="modal-bar-value" style="color:var(--lime)">22.4</span></div>
+                        <div class="modal-bar-item"><span class="modal-bar-label" style="width:90px">Overweight</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:0%"></div></div><span class="modal-bar-value">25–30</span></div>
                     </div>
                 </div>
                 <div>
