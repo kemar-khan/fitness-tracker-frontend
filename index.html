@@ -10,6 +10,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/login.css" />
+    <style>
+        /* Add a small style to make the Google button look premium */
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background-color: #B4D400; /* Your Electric Lime */
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .google-btn:hover {
+            transform: scale(1.02);
+        }
+        .google-icon {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
 </head>
 
 <body>
@@ -22,30 +46,25 @@
 
         <main class="hero-card">
             <h2 class="page-title">Welcome Back</h2>
-            <p class="page-subtitle">Login to your fitness account.</p>
+            <p class="page-subtitle">Access your fitness dashboard instantly.</p>
 
-            <form id="loginForm">
-                <div class="form-group">
-                    <label class="form-label" for="email">Email Address</label>
-                    <input type="email" id="email" class="form-input" placeholder="jordan@example.com" required />
-                </div>
+            <!-- REMOVED THE FORM AND ADDED THE GOOGLE BUTTON -->
+            <div class="login-actions">
+                <button id="googleLoginBtn" class="google-btn">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
+                    Log in with Google
+                </button>
+            </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="password">Password</label>
-                    <input type="password" id="password" class="form-input" placeholder="••••••••" required />
-                </div>
-
-                <button type="submit" class="btn-primary">Log In</button>
-            </form>
-
-            <footer class="footer-links">
-                Don't have an account? <a href="register.html">Register Now</a>
+            <footer class="footer-links" style="margin-top: 2rem;">
+                Don't have an account yet? <a href="register.html">Register here</a><br />
+                Secure authentication powered by Firebase.
             </footer>
         </main>
     </div>
 
     <!-- Custom JS -->
-    <script src="js/login.js"></script>
+    <script type="module" src="js/login.js"></script>
 </body>
 
 </html>
