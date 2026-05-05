@@ -94,7 +94,6 @@ document.addEventListener('DOMContentLoaded', function () {
             activityFeed.appendChild(card);
         });
 
-        // Update overall stats based on ALL logs (or filtered?) - usually dashboard/summary shows all or week
         const totalDuration = logs.reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
         const totalSteps = logs.reduce((sum, l) => sum + (parseInt(l.steps) || 0), 0);
         updateStats(logs.length, totalDuration, totalSteps);
@@ -197,6 +196,5 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // Initial render
     renderLogs();
 });
