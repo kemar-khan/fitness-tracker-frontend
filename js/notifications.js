@@ -4,6 +4,8 @@
 
 'use strict';
 
+import './auth.js';
+
 /* ── INITIAL DATA ────────────────────────────────────────────── */
 const INITIAL_NOTIFICATIONS = [
     { id: 'n1', type: 'workout', title: 'Leg Day Tomorrow', message: 'Ready to crush your leg day? Session starts at 7:00 AM.', time: '2 min ago', unread: true },

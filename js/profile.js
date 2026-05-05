@@ -1,3 +1,4 @@
+import './auth.js';
 import { getStoredUid, loadUserProfile, saveUserProfile } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', async function () {

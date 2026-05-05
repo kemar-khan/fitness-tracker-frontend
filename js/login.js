@@ -1,4 +1,5 @@
 'use strict';
+import './auth.js';
 
 // 1. Import Google Auth functions
 import { auth } from './firebase-config.js';

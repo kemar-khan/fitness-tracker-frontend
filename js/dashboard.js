@@ -4,6 +4,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 'use strict';
+import './auth.js';
 import { getStoredUid, loadFitnessLogs, loadNutritionState, loadUserProfile } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', function () {
