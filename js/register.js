@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmPasswordInput.style.borderColor = '';
 
             if (password !== confirmPassword) {
+                passwordError.textContent = 'Passwords do not match';
+                passwordError.style.color = '#ff4444';
                 passwordError.style.display = 'block';
                 confirmPasswordInput.style.borderColor = '#ff4444';
                 return;
@@ -78,17 +80,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (confirmPasswordInput) {
         confirmPasswordInput.addEventListener('input', function () {
-            if (!this.value) {
+            const password = passwordInput.value;
+            const confirmPassword = this.value;
+
+            if (!confirmPassword) {
                 this.style.borderColor = '';
+                passwordError.textContent = '';
                 passwordError.style.display = 'none';
                 return;
             }
 
-            if (this.value === passwordInput.value) {
-                passwordError.style.display = 'none';
+            if (confirmPassword === password) {
                 this.style.borderColor = 'var(--lime)';
-            } else {
+                passwordError.textContent = 'Passwords match';
+                passwordError.style.color = 'green';
+                passwordError.style.display = 'block';
+            } 
+
+            else {
                 this.style.borderColor = '#ff4444';
+                passwordError.textContent = 'Passwords do not match';
+                passwordError.style.color = '#ff4444';
+                passwordError.style.display = 'block';
             }
         });
     }
