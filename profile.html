@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<!-- profile.html -->
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -47,12 +47,12 @@
                     <button class="btn-settings" id="settingsBtn">
                         <i class="bi bi-gear"></i> Settings
                     </button>
-                    <div class="dropdown">
-                        <a href="#" onclick="showSection('profileSection')">Profile Settings</a>
-                        <a href="#">Privacy Settings</a>
-                        <a href="#" onclick="showSection('securitySection')">Password & Security</a>
-                        <a href="#" onclick="showSection('dangerSection')">Deactivate Account</a>
-                        <a href="#">Help</a>
+                    <div class="dropdown" id="settingsDropdown">
+                        <a href="profile-settings.html">Profile Settings</a>
+                        <a href="profile-settings.html?section=privacySection">Privacy Settings</a>
+                        <a href="profile-settings.html?section=securitySection">Password &amp; Security</a>
+                        <a href="profile-settings.html?section=dangerSection">Deactivate Account</a>
+                        <a href="profile-settings.html?section=helpSection">Help</a>
                     </div>
                 </div>
 
@@ -133,48 +133,97 @@
                 </div>
             </section>
 
-            <!-- Section 2: Security -->
+            <!-- Section 2: My Posts -->
             <section class="settings-section">
                 <header class="section-header">
                     <h3 class="section-title">My Posts</h3>
                     <p class="section-subtitle">Share your fitness journey.</p>
                 </header>
 
-                <div class="posts-container" id="postsContainer">
-                    
-                    <!-- Example Post -->
-                    <div class="post-card">
-                        <img src="https://media.tenor.com/DJIzIsfhL4wAAAAe/skaddale-running-away.png" class="post-image" />
-
-                        <div class="post-content">
-                            <p class="post-text">Just completed a 5km run today! Feeling amazing 💪</p>
-                            <span class="post-date">April 28, 2026</span>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
-            <!-- Section 3: Danger Zone -->
-            <section class="settings-section danger-section">
-                <header class="section-header danger-header">
-                    <h3 class="section-title">Danger Zone</h3>
-                    <p class="section-subtitle">Permanently delete your account and all data.</p>
-                </header>
-                <div class="danger-info">
-                    <p style="font-size: 0.9rem; color: #888; margin-bottom: 32px;">
-                        Once you delete your account, there is no going back. Please be certain.
-                    </p>
-                    <button class="btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">Delete My
-                        Account</button>
+                <div class="posts-container" id="postsContainer"></div>
+                <div id="emptyPostsMsg" style="display:none; text-align:center; padding: 40px 0; color: var(--text-muted); font-size: 0.9rem;">
+                    <i class="bi bi-image" style="font-size: 2rem; display:block; margin-bottom: 12px; color: var(--border);"></i>
+                    No posts yet. Hit the <strong style="color:var(--lime);">+</strong> button to share your first update!
                 </div>
             </section>
         </main>
     </div>
 
-    <button class="fab" onclick="openPostModal()">
-        <i class="bi bi-plus-lg"></i>
-    </button>
+     <!-- FAB with dropdown -->
+    <div class="fab-wrapper">
+        <button class="fab" id="fabBtn" aria-label="Add content">
+            <i class="bi bi-plus-lg" id="fabIcon"></i>
+        </button>
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-menu-item" onclick="openPostModal()">
+                <i class="bi bi-image"></i> Add Post
+            </button>
+        </div>
+    </div>
+
+    <!-- ── ADD POST MODAL ── -->
+    <div class="modal-overlay" id="postModalOverlay">
+        <div class="modal-card" id="postModal">
+            <div class="modal-header">
+                <h3 class="modal-title">New Post</h3>
+                <button class="modal-close" onclick="closePostModal()"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <!-- Image Upload Zone -->
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="imageInput" accept="image/*" style="display:none;" />
+                <div class="upload-placeholder" id="uploadPlaceholder">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span>Click or drag to upload an image</span>
+                </div>
+                <img id="imagePreview" class="image-preview" style="display:none;" alt="Preview" />
+            </div>
+
+            <!-- Caption -->
+            <div style="margin-bottom: 20px;">
+                <label class="form-label" style="display:block; margin-bottom:8px;">Caption</label>
+                <textarea class="feedback-textarea" id="postCaption" placeholder="What's on your mind?" style="margin-bottom:0;"></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closePostModal()">Cancel</button>
+                <button class="btn-primary" onclick="submitPost()">Post</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── EDIT POST MODAL ── -->
+    <div class="modal-overlay" id="editModalOverlay">
+        <div class="modal-card" id="editModal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Post</h3>
+                <button class="modal-close" onclick="closeEditModal()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="form-label" style="display:block; margin-bottom:8px;">Caption</label>
+                <textarea class="feedback-textarea" id="editCaption" placeholder="Edit your caption..." style="margin-bottom:0;"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DELETE CONFIRM MODAL ── -->
+    <div class="modal-overlay" id="deletePostOverlay">
+        <div class="modal-card" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color:#ff4444;">Delete Post</h3>
+                <button class="modal-close" onclick="closeDeleteModal()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <p style="font-size:0.9rem; color: var(--text-muted); margin-bottom: 28px;">Are you sure you want to delete this post? This action cannot be undone.</p>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-danger" onclick="confirmDeletePost()">Delete Post</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
