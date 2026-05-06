@@ -5,6 +5,20 @@
 'use strict';
 
 import './auth.js';
+import './auth.js';
+import { auth, db } from './firebase-config.js';
+
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+import {
+    collection,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc,
+    onSnapshot,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* ── INITIAL DATA ────────────────────────────────────────────── */
 const INITIAL_NOTIFICATIONS = [
@@ -22,8 +36,9 @@ const INITIAL_REMINDERS = [
 
 /* ── STATE ────────────────────────────────────────────────────── */
 let notifications = [...INITIAL_NOTIFICATIONS];
-let reminders = [...INITIAL_REMINDERS];
+let reminders = [];
 let activeView = 'notifications';
+let currentUserId = null;
 
 /* ── DOM ELEMENTS ─────────────────────────────────────────────── */
 const notifFeed = document.getElementById('notifFeed');
@@ -37,6 +52,16 @@ const reminderModal = document.getElementById('reminderModal');
 const reminderForm = document.getElementById('reminderForm');
 const closeModal = document.getElementById('closeModal');
 const cancelBtn = document.getElementById('cancelBtn');
+
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    currentUserId = user.uid;
+    listenToReminders();
+});
 
 /* ── VIEW SWITCHING ───────────────────────────────────────────── */
 switchBtns.forEach(btn => {
@@ -144,6 +169,20 @@ function renderReminders() {
         remindersList.appendChild(card);
     });
 }
+function listenToReminders() {
+    const ref = collection(db, "users", currentUserId, "reminders");
+
+    onSnapshot(ref, (snapshot) => {
+        reminders = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        if (activeView === 'reminders') {
+            renderReminders();
+        }
+    });
+}
 
 function getIcon(type) {
     const icons = {
@@ -168,13 +207,25 @@ window.deleteNotification = (id) => {
     renderNotifications();
 };
 
-window.toggleReminder = (id) => {
-    reminders = reminders.map(r => r.id === id ? { ...r, active: !r.active } : r);
+window.toggleReminder = async (id) => {
+    const reminder = reminders.find(r => r.id === id);
+    if (!reminder || !currentUserId) return;
+
+    await updateDoc(
+        doc(db, "users", currentUserId, "reminders", id),
+        {
+            active: !reminder.active,
+            updatedAt: serverTimestamp()
+        }
+    );
 };
 
-window.deleteReminder = (id) => {
-    reminders = reminders.filter(r => r.id !== id);
-    renderReminders();
+window.deleteReminder = async (id) => {
+    if (!currentUserId) return;
+
+    await deleteDoc(
+        doc(db, "users", currentUserId, "reminders", id)
+    );
 };
 
 /* ── MODAL LOGIC ──────────────────────────────────────────────── */
@@ -188,14 +239,14 @@ addReminderBtn.addEventListener('click', () => {
 window.editReminder = (id) => {
     const r = reminders.find(rem => rem.id === id);
     if (!r) return;
-    
+
     document.getElementById('modalTitle').textContent = 'Edit Reminder';
     document.getElementById('remTitle').value = r.title;
     document.getElementById('remCategory').value = r.category;
     document.getElementById('remTime').value = r.time;
     document.getElementById('remFrequency').value = r.frequency;
     document.getElementById('editingId').value = r.id;
-    
+
     reminderModal.style.display = 'flex';
 };
 
@@ -203,28 +254,41 @@ const close = () => reminderModal.style.display = 'none';
 closeModal.addEventListener('click', close);
 cancelBtn.addEventListener('click', close);
 
-reminderForm.addEventListener('submit', (e) => {
+reminderForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    if (!currentUserId) return;
+
     const id = document.getElementById('editingId').value;
+
     const data = {
         title: document.getElementById('remTitle').value,
         category: document.getElementById('remCategory').value,
         time: document.getElementById('remTime').value,
         frequency: document.getElementById('remFrequency').value,
-        active: true
+        active: true,
+        updatedAt: serverTimestamp()
     };
 
     if (id) {
-        reminders = reminders.map(r => r.id === id ? { ...data, id } : r);
+        await updateDoc(
+            doc(db, "users", currentUserId, "reminders", id),
+            data
+        );
     } else {
-        reminders.push({ ...data, id: 'r' + Date.now() });
+        await addDoc(
+            collection(db, "users", currentUserId, "reminders"),
+            {
+                ...data,
+                createdAt: serverTimestamp()
+            }
+        );
     }
 
     close();
-    renderReminders();
 });
 
 /* ── INIT ─────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-    render();
+    renderNotifications();
 });
