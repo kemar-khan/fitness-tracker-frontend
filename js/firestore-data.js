@@ -4,6 +4,7 @@ import {
     getDoc,
     setDoc,
     updateDoc,
+    getDocs,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -63,10 +64,10 @@ export async function loadFitnessLogs(uid) {
 
 export async function saveFitnessLogs(uid, logs) {
     if (!uid) return;
-    await updateDoc(userDocRef(uid), {
+    await setDoc(userDocRef(uid), {
         fitnessLogs: logs,
         updatedAt: serverTimestamp()
-    });
+    }, { merge: true });
 }
 
 export async function loadNutritionState(uid) {

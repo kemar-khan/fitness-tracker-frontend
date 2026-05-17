@@ -58,6 +58,9 @@ onAuthStateChanged(auth, (user) => {
     currentUserId = user.uid;
     listenToNotifications();
     listenToReminders();
+
+
+    checkDueReminders();
 });
 
 /* ── VIEW SWITCHING ───────────────────────────────────────────── */
@@ -177,11 +180,84 @@ function listenToNotifications() {
             ...doc.data()
         }));
 
+        // Sort newest first
+        notifications.sort((a, b) => {
+            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+            return dateB - dateA;
+        });
+
+        // Update unread count badge
+        updateNotificationCount();
+
         if (activeView === 'notifications') {
             renderNotifications();
         }
     });
 }
+function updateNotificationCount() {
+    const count = notifications.filter(n => n.unread).length;
+    const notifCount = document.getElementById("notifCount");
+
+    if (notifCount) {
+        notifCount.textContent = count;
+        notifCount.style.display = count > 0 ? "inline-flex" : "none";
+    }
+}
+async function checkDueReminders() {
+
+    if (!currentUserId) return;
+
+    const now = new Date();
+
+    // Current date → YYYY-MM-DD
+    const today = now.toLocaleDateString('en-CA');
+
+    // Current time → HH:MM
+    const currentTime = now.toTimeString().slice(0, 5);
+
+    for (const reminder of reminders) {
+
+        // Skip inactive reminders
+        if (!reminder.active) continue;
+
+        // Skip already triggered reminders
+        if (reminder.triggered) continue;
+
+        // Check date + time
+        if (
+            reminder.date === today &&
+            reminder.time === currentTime
+        ) {
+
+
+            await addDoc(
+                collection(db, "users", currentUserId, "notifications"),
+                {
+                    type: reminder.category,
+                    title: "Reminder Due",
+                    message: `Time for ${reminder.title}.`,
+                    time: "Just now",
+                    unread: true,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                }
+            );
+
+
+            await updateDoc(
+                doc(db, "users", currentUserId, "reminders", reminder.id),
+                {
+                    triggered: true,
+                    updatedAt: serverTimestamp()
+                }
+            );
+        }
+    }
+}
+setInterval(() => {
+    checkDueReminders();
+}, 60000);
 function listenToReminders() {
     const ref = collection(db, "users", currentUserId, "reminders");
 
@@ -194,6 +270,9 @@ function listenToReminders() {
         if (activeView === 'reminders') {
             renderReminders();
         }
+
+        // Check due reminders after reminders are loaded
+        checkDueReminders();
     });
 }
 
@@ -293,6 +372,7 @@ reminderForm.addEventListener('submit', async (e) => {
         time: document.getElementById('remTime').value,
         frequency: document.getElementById('remFrequency').value,
         active: true,
+        triggered: false,
         updatedAt: serverTimestamp()
     };
     await addDoc(
