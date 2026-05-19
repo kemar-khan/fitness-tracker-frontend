@@ -835,6 +835,68 @@ body {
     font-size: 0.85rem;
 }
 
+.toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+
+    background: var(--surface-alt);
+    color: var(--text);
+
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--lime);
+
+    border-radius: var(--radius);
+
+    padding: 14px 18px;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-weight: 700;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    opacity: 0;
+    transform: translateY(16px);
+
+    transition: 0.3s ease;
+
+    z-index: 2000;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* SUCCESS */
+
+.toast-success {
+    border-left: 4px solid var(--lime);
+}
+
+.toast-success i {
+    color: var(--lime);
+}
+
+/* ERROR */
+
+.toast-error {
+    border-left: 4px solid #ff4444;
+}
+
+.toast-error i {
+    color: #ff4444;
+}
+
+/* ICON */
+
+.toast i {
+    font-size: 1.2rem;
+}
+
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
 @media (max-width: 1024px) {
     .nutrition-content {

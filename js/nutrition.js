@@ -5,7 +5,12 @@
 
 'use strict';
 import './auth.js';
-import { auth } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
+import {
+    collection,
+    addDoc,
+    serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { loadNutritionState, saveNutritionState } from './firestore-data.js';
 
@@ -74,6 +79,47 @@ async function startNutritionApp(uid) {
         }).catch((error) => {
             console.error('Unable to save nutrition state to Firestore:', error);
         });
+    }
+    async function createNotification(uid, type, title, message) {
+        if (!uid) return;
+
+        await addDoc(collection(db, "users", uid, "notifications"), {
+            type,
+            title,
+            message,
+            time: "Just now",
+            unread: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+    }
+
+    function showToast(message, type = "success") {
+        const toast = document.createElement("div");
+
+        toast.className = `toast toast-${type}`;
+
+        const icon =
+            type === "error"
+                ? "bi-exclamation-triangle-fill"
+                : "bi-check-circle-fill";
+
+        toast.innerHTML = `
+        <i class="bi ${icon}"></i>
+        <span>${message}</span>
+    `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add("show");
+        }, 100);
+
+        setTimeout(() => {
+            toast.classList.remove("show");
+
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     function refreshUI() {
@@ -419,7 +465,7 @@ async function startNutritionApp(uid) {
         };
     }
 
-    function addMealToJournal(meal, portion) {
+    async function addMealToJournal(meal, portion) {
         const scaled = scaleMeal(meal, portion);
         const entry = {
             ...meal,
@@ -438,6 +484,37 @@ async function startNutritionApp(uid) {
         pendingCategory = null;
         mealSearch.placeholder = "Search meals...";
         refreshUI();
+
+        showToast(`${entry.name} added to ${entry.category} plan`);
+
+        await createNotification(
+            uid,
+            "nutrition",
+            "Meal Logged",
+            `${entry.name} has been added to your ${entry.category} plan with ${entry.calories} kcal.`
+        );
+
+        const totalConsumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
+
+        if (totalConsumed > dailyGoal) {
+            showToast(`Calorie limit exceeded: ${totalConsumed} / ${dailyGoal} kcal`, "error");
+
+            await createNotification(
+                uid,
+                "warning",
+                "Calorie Limit Exceeded",
+                `You have consumed ${totalConsumed} kcal, which is above your ${dailyGoal} kcal goal.`
+            );
+        } else if (totalConsumed >= dailyGoal - 50) {
+            showToast(`Daily calorie goal achieved: ${totalConsumed} / ${dailyGoal} kcal`);
+
+            await createNotification(
+                uid,
+                "achievement",
+                "Daily Calorie Goal Achieved",
+                `You have reached your daily calorie target with ${totalConsumed} kcal consumed.`
+            );
+        }
     }
 
     window.removeTracked = (timestamp) => {

@@ -103,7 +103,11 @@ function renderNotifications() {
 
     notifications.forEach(n => {
         const card = document.createElement('div');
-        card.className = `item-card ${n.unread ? 'unread-card' : ''}`;
+        card.className = `
+    item-card
+    notification-${n.type}
+    ${n.unread ? 'unread-card' : ''}
+`;
         card.innerHTML = `
             <div class="item-icon">
                 <i class="bi ${getIcon(n.type)}"></i>
@@ -234,7 +238,7 @@ async function checkDueReminders() {
             await addDoc(
                 collection(db, "users", currentUserId, "notifications"),
                 {
-                    type: reminder.category,
+                    type: "reminder",
                     title: "Reminder Due",
                     message: `Time for ${reminder.title}.`,
                     time: "Just now",

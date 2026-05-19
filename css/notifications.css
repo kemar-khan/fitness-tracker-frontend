@@ -407,6 +407,58 @@ input:checked+.toggle-slider:before {
     color: var(--lime);
 }
 
+/* ── NOTIFICATION TYPES ───────────────────────── */
+
+/* Workout */
+
+.notification-workout {
+    border-left: 4px solid var(--lime);
+}
+
+.notification-workout .item-icon {
+    color: var(--lime);
+}
+
+/* Nutrition */
+
+.notification-nutrition {
+    border-left: 4px solid #22c55e;
+}
+
+.notification-nutrition .item-icon {
+    color: #22c55e;
+}
+
+/* Achievement */
+
+.notification-achievement {
+    border-left: 4px solid #facc15;
+}
+
+.notification-achievement .item-icon {
+    color: #facc15;
+}
+
+/* Reminder */
+
+.notification-reminder {
+    border-left: 4px solid #3b82f6;
+}
+
+.notification-reminder .item-icon {
+    color: #3b82f6;
+}
+
+/* Warning */
+
+.notification-warning {
+    border-left: 4px solid #ff4444;
+}
+
+.notification-warning .item-icon {
+    color: #ff4444;
+}
+
 /* ── MODAL ───────────────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;
