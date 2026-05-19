@@ -5,111 +5,331 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard — FitPulse</title>
-
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
-    <!-- Custom CSS -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap"
+        rel="stylesheet" />
     <link rel="stylesheet" href="css/dashboard.css" />
 </head>
 
 <body>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">FitPulse</div>
-        <nav class="sidebar-nav">
-            <a href="dashboard.html" class="nav-item active"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
-            <a href="fitness.html" class="nav-item"><i class="bi bi-activity"></i><span>Workouts</span></a>
-            <a href="nutrition.html" class="nav-item"><i class="bi bi-egg-fried"></i><span>Nutrition</span></a>
-            <a href="notifications.html" class="nav-item"><i class="bi bi-bell-fill"></i><span>Alerts</span></a>
-            <a href="profile.html" class="nav-item"><i class="bi bi-person"></i><span>Profile</span></a>
-        </nav>
-        <a href="profile.html" class="sidebar-user">
-            <img src="https://i.pravatar.cc/40?img=12" alt="User" class="user-avatar" />
-            <div class="user-info">
-                <div style="font-size: 0.85rem; font-weight: 700;">Jordan Lee</div>
-                <div style="font-size: 0.7rem; color: var(--lime);">PRO MEMBER</div>
-            </div>
-        </a>
-    </aside>
+    <!-- sidebar -->
+    <div id="sidebar-placeholder"></div>
 
     <div class="main-wrapper">
+
+        <!-- TOPBAR -->
         <header class="topbar">
-            <h1 class="page-title">Personal <span>Dashboard</span></h1>
+            <div class="topbar-left">
+                <h1 class="page-title">Progress <span>Charts</span></h1>
+                <div class="page-subtitle">Track your fitness journey over time</div>
+            </div>
+            <div class="topbar-right">
+                <div class="topbar-date">
+                    <i class="bi bi-calendar3"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
         </header>
 
         <main class="dashboard-content">
-            <!-- Summary Stats -->
+
+            <!-- ROW 1: STAT CARDS -->
             <section class="stats-grid">
-                <div class="summary-card">
-                    <div class="card-title">Workout Sessions</div>
-                    <div class="card-value" id="summaryWorkouts">--</div>
-                    <span class="card-unit">sessions</span>
+                <div class="summary-card card-lime" style="--delay:0.05s">
+                    <div class="card-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <div class="card-body">
+                        <div class="card-title">Total Workouts</div>
+                        <div class="card-value-row">
+                            <span class="card-value" id="summaryWorkouts">18</span>
+                        </div>
+                        <div class="card-trend up"><i class="bi bi-arrow-up-right"></i> +3 vs last month</div>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <div class="card-title">Total Duration</div>
-                    <div class="card-value" id="summaryDuration">--</div>
-                    <span class="card-unit">min</span>
+                <div class="summary-card card-orange" style="--delay:0.1s">
+                    <div class="card-icon"
+                        style="background:rgba(251,146,60,0.12);border-color:rgba(251,146,60,0.2);color:#FB923C"><i
+                            class="bi bi-person-walking"></i></div>
+                    <div class="card-body">
+                        <div class="card-title">Avg. Daily Steps</div>
+                        <div class="card-value-row">
+                            <span class="card-value" id="summarySteps">8,420</span>
+                        </div>
+                        <div class="card-trend down"><i class="bi bi-arrow-down-right"></i> -12% vs last month</div>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <div class="card-title">Total Calories</div>
-                    <div class="card-value" id="summaryCalories">--</div>
-                    <span class="card-unit">k</span>
+                <div class="summary-card card-blue" style="--delay:0.15s">
+                    <div class="card-icon"
+                        style="background:rgba(56,189,248,0.12);border-color:rgba(56,189,248,0.2);color:#38BDF8"><i
+                            class="bi bi-fire"></i></div>
+                    <div class="card-body">
+                        <div class="card-title">Avg. Calories/day</div>
+                        <div class="card-value-row">
+                            <span class="card-value" id="summaryCalories">2,104</span>
+                        </div>
+                        <div class="card-trend neutral"><i class="bi bi-dash-lg"></i> On target</div>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <div class="card-title">Average Time</div>
-                    <div class="card-value" id="summaryAvg">--</div>
-                    <span class="card-unit">min</span>
+                <div class="summary-card card-purple" style="--delay:0.2s">
+                    <div class="card-icon"
+                        style="background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.2);color:#A78BFA"><i
+                            class="bi bi-trophy-fill"></i></div>
+                    <div class="card-body">
+                        <div class="card-title">Active Streak</div>
+                        <div class="card-value-row">
+                            <span class="card-value" id="summaryStreak">14</span>
+                            <span class="card-unit">days</span>
+                        </div>
+                        <div class="card-trend purple"><i class="bi bi-star-fill"></i> Personal best!</div>
+                    </div>
                 </div>
             </section>
 
-            <!-- Charts Section -->
-            <section class="charts-grid">
+            <!-- ROW 2: WEEKLY PROGRESS + DAILY CALORIES -->
+            <section class="hero-row">
+
+                <!-- Weekly Progress Ring -->
+                <div class="progress-hero-card">
+                    <div class="hero-header">
+                        <div>
+                            <div class="card-title">Weekly Progress</div>
+                            <div class="hero-subtitle">Your activity this week</div>
+                        </div>
+                        <div class="streak-badge"><i class="bi bi-flame"></i> <span id="streakDays">6</span> day streak
+                        </div>
+                    </div>
+                    <div class="hero-body">
+                        <div class="ring-wrapper">
+                            <canvas id="progressRing" width="180" height="180"></canvas>
+                            <div class="ring-center">
+                                <div class="ring-pct" id="ringPct">0%</div>
+                                <div class="ring-label">complete</div>
+                            </div>
+                        </div>
+                        <div class="hero-stats">
+                            <div class="hero-stat">
+                                <div class="hstat-icon" style="background:rgba(180,212,0,0.12)"><i
+                                        class="bi bi-person-walking" style="color:var(--lime)"></i></div>
+                                <div>
+                                    <div class="hstat-label">Steps today</div>
+                                    <div class="hstat-value" id="stepsToday">8,240</div>
+                                </div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hstat-icon" style="background:rgba(56,189,248,0.12)"><i
+                                        class="bi bi-droplet-fill" style="color:#38BDF8"></i></div>
+                                <div>
+                                    <div class="hstat-label">Water intake</div>
+                                    <div class="hstat-value">8 glasses</div>
+                                </div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hstat-icon" style="background:rgba(248,113,113,0.12)"><i
+                                        class="bi bi-heart-pulse-fill" style="color:#F87171"></i></div>
+                                <div>
+                                    <div class="hstat-label">Avg. BPM</div>
+                                    <div class="hstat-value">86 bpm</div>
+                                </div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hstat-icon" style="background:rgba(180,212,0,0.12)"><i
+                                        class="bi bi-trophy-fill" style="color:var(--lime)"></i></div>
+                                <div>
+                                    <div class="hstat-label">Goals met</div>
+                                    <div class="hstat-value">5 / 7</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="week-strip" id="weekStrip"></div>
+                </div>
+
+                <!-- Daily Calories -->
+                <div class="calorie-card">
+                    <div class="hero-header">
+                        <div>
+                            <div class="card-title">Daily Calories</div>
+                            <div class="hero-subtitle">Intake vs target</div>
+                        </div>
+                        <i class="bi bi-fire" style="color:var(--lime);font-size:1.4rem"></i>
+                    </div>
+                    <div class="cal-big">
+                        <span class="cal-number" id="calConsumed">1,250</span>
+                        <span class="cal-unit">kcal</span>
+                    </div>
+                    <div class="cal-target-row">
+                        <span>Target: <strong id="calTarget">1,920 kcal</strong></span>
+                        <span id="calPctText" style="color:var(--lime)">65%</span>
+                    </div>
+                    <div class="cal-bar-track">
+                        <div class="cal-bar-fill" id="calBarFill" style="width:65%"></div>
+                    </div>
+                    <div class="macro-grid">
+                        <div class="macro-item">
+                            <div class="macro-label">Carbs</div>
+                            <div class="macro-bar-wrap">
+                                <div class="macro-bar" style="--c:#B4D400;--w:55%"></div>
+                            </div>
+                            <div class="macro-nums"><span style="color:var(--lime)">109g</span> / 198g</div>
+                        </div>
+                        <div class="macro-item">
+                            <div class="macro-label">Fat</div>
+                            <div class="macro-bar-wrap">
+                                <div class="macro-bar" style="--c:#F87171;--w:26%"></div>
+                            </div>
+                            <div class="macro-nums"><span style="color:#F87171">13g</span> / 52g</div>
+                        </div>
+                        <div class="macro-item">
+                            <div class="macro-label">Protein</div>
+                            <div class="macro-bar-wrap">
+                                <div class="macro-bar" style="--c:#38BDF8;--w:28%"></div>
+                            </div>
+                            <div class="macro-nums"><span style="color:#38BDF8">34g</span> / 122g</div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ROW 3: COMBINED CHART + CALORIE BALANCE -->
+            <section class="main-row">
+
+                <!-- Activity Duration & Steps (combined dual-axis) -->
                 <div class="chart-card">
                     <div class="chart-header">
-                        <label class="chart-title">Weekly Activity Duration</label>
+                        <div>
+                            <div class="chart-title">Activity Duration & Steps</div>
+                            <div class="chart-sub">This week</div>
+                        </div>
+                        <div class="combo-legend">
+                            <span class="leg-item">
+                                <span class="leg-dot"
+                                    style="background:rgba(180,212,0,0.3);border:1px solid var(--lime)"></span>
+                                Duration (min)
+                            </span>
+                            <span class="leg-item">
+                                <span class="leg-dot" style="background:var(--lime)"></span>
+                                Steps (k)
+                            </span>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="activityChart"></canvas>
+                    <div class="chart-container" style="height:280px">
+                        <canvas id="comboChart" role="img"
+                            aria-label="Combined activity duration and steps chart"></canvas>
                     </div>
                 </div>
+
+                <!-- Calorie Balance -->
                 <div class="chart-card">
                     <div class="chart-header">
-                        <label class="chart-title">Steps Trend</label>
+                        <div>
+                            <div class="chart-title">Calorie Balance</div>
+                            <div class="chart-sub">This week</div>
+                        </div>
+                        <div class="combo-legend">
+                            <span class="leg-item"><span class="leg-dot"
+                                    style="background:#F87171"></span>Consumed</span>
+                            <span class="leg-item"><span class="leg-dot"
+                                    style="background:var(--lime)"></span>Burned</span>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="stepsChart"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Feeds Section -->
-            <section class="feeds-grid">
-                <!-- Recent Activity List -->
-                <div class="feed-section">
-                    <label class="section-label">Recent Activity <a href="fitness.html" class="view-all">View All</a></label>
-                    <div id="logsFeed">
-                        <!-- Loaded by JS -->
+                    <div class="chart-container" style="height:280px">
+                        <canvas id="calorieBalanceChart" role="img" aria-label="Calorie balance chart"></canvas>
                     </div>
                 </div>
 
-                <!-- Recent Meals List -->
-                <div class="feed-section">
-                    <label class="section-label">Recent Meals <a href="nutrition.html" class="view-all">Plan</a></label>
-                    <div id="mealsFeed">
-                        <!-- Loaded by JS -->
+            </section>
+
+            <!-- ROW 3: WEEKLY GOALS + BODY METRICS + AI INSIGHT -->
+            <section class="lower-row">
+
+                <!-- Weekly Goals -->
+                <div class="chart-card goals-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Weekly Goals</div>
+                            <div class="chart-sub" id="weekLabel">Week — of 2026</div>
+                        </div>
+                        <a href="fitness.html" class="view-all-link">Edit Goals</a>
+                    </div>
+                    <div class="goals-rings">
+                        <div class="goal-ring-item">
+                            <div class="goal-ring-wrap">
+                                <canvas id="ringWorkouts" width="100" height="100"></canvas>
+                                <div class="goal-ring-pct" style="color:var(--lime)">80%</div>
+                            </div>
+                            <div class="goal-ring-label">Workouts<br><strong>4/5</strong></div>
+                        </div>
+                        <div class="goal-ring-item">
+                            <div class="goal-ring-wrap">
+                                <canvas id="ringSteps" width="100" height="100"></canvas>
+                                <div class="goal-ring-pct" style="color:#38BDF8">58%</div>
+                            </div>
+                            <div class="goal-ring-label">Step Goal<br><strong>4/7 days</strong></div>
+                        </div>
+                        <div class="goal-ring-item">
+                            <div class="goal-ring-wrap">
+                                <canvas id="ringCalories" width="100" height="100"></canvas>
+                                <div class="goal-ring-pct" style="color:#F59E0B">85%</div>
+                            </div>
+                            <div class="goal-ring-label">Calorie Target<br><strong>6/7 days</strong></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Body Metrics -->
+                <div class="chart-card body-metrics-card">
+                    <div class="chart-header">
+                        <div>
+                            <div class="chart-title">Body Metrics</div>
+                            <div class="chart-sub">Weight trend this month</div>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="height:150px">
+                        <canvas id="weightChart" role="img" aria-label="Weight trend chart"></canvas>
+                    </div>
+                    <div class="metrics-stats">
+                        <div class="metric-stat">
+                            <div class="metric-stat-label">Current</div>
+                            <div class="metric-stat-value" id="weightCurrent">72.1 kg</div>
+                        </div>
+                        <div class="metric-stat">
+                            <div class="metric-stat-label">Start</div>
+                            <div class="metric-stat-value">74.2 kg</div>
+                        </div>
+                        <div class="metric-stat">
+                            <div class="metric-stat-label">Lost</div>
+                            <div class="metric-stat-value" style="color:var(--lime)">2.1 kg</div>
+                        </div>
+                        <div class="metric-stat">
+                            <div class="metric-stat-label">BMI</div>
+                            <div class="metric-stat-value">22.4</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Insight -->
+                <div class="ai-insight-card">
+                    <div class="ai-badge"><i class="bi bi-stars"></i> AI Insight</div>
+                    <div class="ai-title">This week's summary</div>
+                    <div class="ai-text" id="aiInsightText">Analysing your activity data...</div>
+                    <button class="ai-btn" id="aiTipsBtn">
+                        Ask for tips <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+
             </section>
+
         </main>
     </div>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom JS -->
-    <script src="js/dashboard.js"></script>
+    <!-- sidebar loader -->
+    <script src="js/sidebar-loader.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
 </body>
 
 </html>
