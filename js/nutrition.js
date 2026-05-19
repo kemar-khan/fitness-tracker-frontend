@@ -5,10 +5,21 @@
 
 'use strict';
 import './auth.js';
-import { getStoredUid, loadNutritionState, saveNutritionState } from './firestore-data.js';
+import { auth } from './firebase-config.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { loadNutritionState, saveNutritionState } from './firestore-data.js';
 
-document.addEventListener('DOMContentLoaded', async function () {
-    const uid = getStoredUid();
+let nutritionAppStarted = false;
+
+document.addEventListener('DOMContentLoaded', function () {
+    onAuthStateChanged(auth, async (user) => {
+        if (!user || nutritionAppStarted) return;
+        nutritionAppStarted = true;
+        await startNutritionApp(user.uid);
+    });
+});
+
+async function startNutritionApp(uid) {
     // --- DATA ---
     const mealDatabase = [
         { id: 1, name: "Grilled Chicken Salad", category: "Lunch", calories: 350, protein: 35, carbs: 10, fat: 12, cuisine: "Western", dietTags: ["High-Protein", "Low-Carb"], ingredients: ["Grilled chicken", "Romaine lettuce", "Cherry tomatoes", "Cucumber"], prepTime: "15 min", instructions: "Slice the grilled chicken, toss with vegetables, and finish with a light dressing.", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&q=80" },
@@ -19,9 +30,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         { id: 6, name: "Greek Yogurt Parfait", category: "Snack", calories: 220, protein: 15, carbs: 25, fat: 6, cuisine: "Mediterranean", dietTags: ["Vegetarian", "High-Protein"], ingredients: ["Greek yogurt", "Granola", "Fresh berries", "Honey"], prepTime: "5 min", instructions: "Layer yogurt, berries, and granola in a glass, then drizzle with a little honey.", img: "https://images.unsplash.com/photo-1488477181946-6228a0291777?w=200&q=80" }
     ];
 
-    let favorites = JSON.parse(localStorage.getItem('favoriteMeals')) || [];
-    let trackedMeals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
-    let dailyGoal = parseInt(localStorage.getItem('dailyCalorieGoal')) || 2500;
+    let favorites = [];
+    let trackedMeals = [];
+    let dailyGoal = 2500;
+    let calorieMetrics = null;
 
     // --- DOM ---
     const mealSearch = document.getElementById('mealSearch');
@@ -45,48 +57,29 @@ document.addEventListener('DOMContentLoaded', async function () {
     let customCategory = null;
     let customPortion = 1;
 
+    function applyNutritionState(state) {
+        if (!state) return;
+        trackedMeals = Array.isArray(state.trackedMeals) ? state.trackedMeals : [];
+        favorites = Array.isArray(state.favorites) ? state.favorites : [];
+        dailyGoal = Number.isFinite(state.dailyGoal) ? state.dailyGoal : 2500;
+        calorieMetrics = state.calorieMetrics ?? null;
+    }
+
     function persistNutritionState() {
-        const nutritionState = {
+        saveNutritionState(uid, {
             trackedMeals,
             favorites,
             dailyGoal,
-            calorieMetrics: getStoredCalorieMetrics()
-        };
-        saveNutritionState(uid, nutritionState).catch((error) => {
+            calorieMetrics
+        }).catch((error) => {
             console.error('Unable to save nutrition state to Firestore:', error);
         });
     }
 
-    // ── INITIALIZATION ──────────────────────────────────────────
-    function init() {
+    function refreshUI() {
         renderJournal();
-        renderDiscovery();
+        renderDiscovery(mealSearch?.value || '');
         renderFavorites();
-    async function loadInitialState() {
-        try {
-            const cloudState = await loadNutritionState(uid);
-            if (!cloudState) return;
-
-            if (Array.isArray(cloudState.trackedMeals)) {
-                trackedMeals = cloudState.trackedMeals;
-                localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
-            }
-            if (Array.isArray(cloudState.favorites)) {
-                favorites = cloudState.favorites;
-                localStorage.setItem('favoriteMeals', JSON.stringify(favorites));
-            }
-            if (Number.isFinite(cloudState.dailyGoal)) {
-                dailyGoal = cloudState.dailyGoal;
-                localStorage.setItem('dailyCalorieGoal', String(dailyGoal));
-            }
-            if (cloudState.calorieMetrics) {
-                localStorage.setItem('calorieMetrics', JSON.stringify(cloudState.calorieMetrics));
-            }
-        } catch (error) {
-            console.error('Unable to load nutrition state from Firestore:', error);
-        }
-    }
-
         updateStats();
         renderCalorieMetrics();
     }
@@ -357,17 +350,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         return errors;
     }
 
-    function getStoredCalorieMetrics() {
-        try {
-            const raw = localStorage.getItem('calorieMetrics');
-            return raw ? JSON.parse(raw) : null;
-        } catch (_) {
-            return null;
-        }
-    }
-
     function renderCalorieMetrics() {
-        const metrics = getStoredCalorieMetrics();
+        const metrics = calorieMetrics;
         const fields = [
             {
                 bmi: document.getElementById('calcBmi'),
@@ -450,22 +434,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         };
 
         trackedMeals.unshift(entry);
-        localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
         persistNutritionState();
-
         pendingCategory = null;
         mealSearch.placeholder = "Search meals...";
-
-        init();
-        window.dispatchEvent(new Event('logsUpdated'));
+        refreshUI();
     }
 
     window.removeTracked = (timestamp) => {
         trackedMeals = trackedMeals.filter(m => m.trackedAt !== timestamp);
-        localStorage.setItem('trackedMeals', JSON.stringify(trackedMeals));
         persistNutritionState();
-        init();
-        window.dispatchEvent(new Event('logsUpdated'));
+        refreshUI();
     };
 
     window.toggleFavoriteMeal = (id) => {
@@ -478,7 +456,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             favorites.unshift(meal);
         }
 
-        localStorage.setItem('favoriteMeals', JSON.stringify(favorites));
         persistNutritionState();
         renderFavorites();
         renderDiscovery(mealSearch.value);
@@ -709,10 +686,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const macroTargets = calculateMacroTargets(targetCalories);
 
             dailyGoal = targetCalories;
-            localStorage.setItem('dailyCalorieGoal', dailyGoal);
-
-            // Keep calculated values for future UI display (dashboard/details)
-            localStorage.setItem('calorieMetrics', JSON.stringify({
+            calorieMetrics = {
                 bmi: Number(bmi.toFixed(1)),
                 bmiCategory,
                 bmr: Math.round(bmr),
@@ -720,7 +694,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 targetCalories,
                 goalType,
                 macroTargets
-            }));
+            };
             persistNutritionState();
 
             calculatorModal.style.display = 'none';
@@ -741,7 +715,6 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
         dailyGoal = manualGoal;
-        localStorage.setItem('dailyCalorieGoal', dailyGoal);
         persistNutritionState();
         goalModal.style.display = 'none';
         updateStats();
@@ -754,8 +727,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     filterCuisine?.addEventListener('change', () => renderDiscovery(mealSearch.value));
     filterMaxCalories?.addEventListener('input', () => renderDiscovery(mealSearch.value));
 
-    await loadInitialState();
+    try {
+        applyNutritionState(await loadNutritionState(uid));
+    } catch (error) {
+        console.error('Unable to load nutrition state from Firestore:', error);
+    }
 
-    // Initial load
-    init();
-});
+    refreshUI();
+}
