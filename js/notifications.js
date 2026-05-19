@@ -48,6 +48,8 @@ const reminderModal = document.getElementById('reminderModal');
 const reminderForm = document.getElementById('reminderForm');
 const closeModal = document.getElementById('closeModal');
 const cancelBtn = document.getElementById('cancelBtn');
+const markAllReadBtn = document.getElementById('markAllReadBtn');
+const clearNotificationsBtn = document.getElementById('clearNotificationsBtn');
 
 onAuthStateChanged(auth, (user) => {
     if (!user) {
@@ -104,15 +106,18 @@ function renderNotifications() {
     notifications.forEach(n => {
         const card = document.createElement('div');
         card.className = `
-    item-card
-    notification-${n.type}
-    ${n.unread ? 'unread-card' : ''}
-`;
+            item-card
+            notification-${n.type}
+            ${n.unread ? 'unread-card' : ''}
+        `;
+
         card.innerHTML = `
             <div class="item-icon">
                 <i class="bi ${getIcon(n.type)}"></i>
             </div>
+
             <div class="item-body">
+                ${n.unread ? '<span class="unread-dot"></span>' : ''}
                 <div class="item-title">${n.title}</div>
                 <p class="item-desc">${n.message}</p>
                 <div class="item-meta">
@@ -121,6 +126,7 @@ function renderNotifications() {
                     <span>${n.type}</span>
                 </div>
             </div>
+
             <div class="item-actions">
                 <button class="btn-small" onclick="toggleRead('${n.id}')" title="Mark as ${n.unread ? 'read' : 'unread'}">
                     <i class="bi ${n.unread ? 'bi-check' : 'bi-envelope'}"></i>
@@ -130,6 +136,7 @@ function renderNotifications() {
                 </button>
             </div>
         `;
+
         notifFeed.appendChild(card);
     });
 }
@@ -313,6 +320,33 @@ window.deleteNotification = async (id) => {
         doc(db, "users", currentUserId, "notifications", id)
     );
 };
+markAllReadBtn?.addEventListener('click', async () => {
+    if (!currentUserId) return;
+
+    const unreadNotifications = notifications.filter(n => n.unread);
+
+    for (const n of unreadNotifications) {
+        await updateDoc(
+            doc(db, "users", currentUserId, "notifications", n.id),
+            {
+                unread: false,
+                updatedAt: serverTimestamp()
+            }
+        );
+    }
+});
+
+clearNotificationsBtn?.addEventListener('click', async () => {
+    if (!currentUserId) return;
+
+    if (!confirm("Are you sure you want to clear all notifications?")) return;
+
+    for (const n of notifications) {
+        await deleteDoc(
+            doc(db, "users", currentUserId, "notifications", n.id)
+        );
+    }
+});
 
 window.toggleReminder = async (id) => {
     const reminder = reminders.find(r => r.id === id);

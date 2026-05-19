@@ -459,6 +459,113 @@ input:checked+.toggle-slider:before {
     color: #ff4444;
 }
 
+.notification-actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.btn-danger-custom {
+    background: #ff4444;
+    color: white;
+}
+
+.btn-danger-custom:hover {
+    background: #cc3333;
+}
+
+/* Workout */
+
+.notification-workout .item-title {
+    color: var(--lime);
+}
+
+/* Nutrition */
+
+.notification-nutrition .item-title {
+    color: #22c55e;
+}
+
+/* Achievement */
+
+.notification-achievement .item-title {
+    color: #facc15;
+}
+
+/* Reminder */
+
+.notification-reminder .item-title {
+    color: #3b82f6;
+}
+
+/* Warning */
+
+.notification-warning .item-title {
+    color: #ff4444;
+}
+
+.item-body {
+    position: relative;
+}
+
+.unread-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+
+    width: 10px;
+    height: 10px;
+
+    background: var(--lime);
+    border-radius: 50%;
+
+    box-shadow: 0 0 10px rgba(180, 212, 0, 0.35);
+    animation: unreadPulse 1.8s infinite;
+}
+
+.notification-workout .item-meta,
+.notification-workout .item-meta span {
+    color: var(--lime);
+}
+
+.notification-nutrition .item-meta,
+.notification-nutrition .item-meta span {
+    color: #22c55e;
+}
+
+.notification-achievement .item-meta,
+.notification-achievement .item-meta span {
+    color: #facc15;
+}
+
+.notification-reminder .item-meta,
+.notification-reminder .item-meta span {
+    color: #3b82f6;
+}
+
+.notification-warning .item-meta,
+.notification-warning .item-meta span {
+    color: #ff4444;
+}
+
+@keyframes unreadPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 /* ── MODAL ───────────────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;
