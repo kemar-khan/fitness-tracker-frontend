@@ -1,34 +1,36 @@
 'use strict';
+import './auth.js';
+import { getStoredUid, loadFitnessLogs, loadNutritionState, loadUserProfile } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', function () {
 
     /* ── COLOUR TOKENS ────────────────────────────────────────── */
-    const LIME       = '#B4D400';
-    const LIME_FILL  = 'rgba(180,212,0,0.12)';
-    const LIME_BAR   = 'rgba(180,212,0,0.20)';
-    const DARK_BAR   = '#2a2a2a';
-    const GRID       = '#1e1e1e';
+    const LIME = '#B4D400';
+    const LIME_FILL = 'rgba(180,212,0,0.12)';
+    const LIME_BAR = 'rgba(180,212,0,0.20)';
+    const DARK_BAR = '#2a2a2a';
+    const GRID = '#1e1e1e';
     const TEXT_MUTED = '#666666';
-    const BLUE       = '#38BDF8';
-    const RED        = '#F87171';
-    const AMBER      = '#F59E0B';
-    const SURFACE    = '#111111';
+    const BLUE = '#38BDF8';
+    const RED = '#F87171';
+    const AMBER = '#F59E0B';
+    const SURFACE = '#111111';
 
     /* ── CHART.JS GLOBAL DEFAULTS ─────────────────────────────── */
     Chart.defaults.font.family = "'DM Sans', sans-serif";
-    Chart.defaults.font.size   = 11;
-    Chart.defaults.color       = TEXT_MUTED;
+    Chart.defaults.font.size = 11;
+    Chart.defaults.color = TEXT_MUTED;
     Chart.defaults.borderColor = GRID;
 
     const tooltipDefaults = {
-        backgroundColor : '#161616',
-        borderColor     : '#2a2a2a',
-        borderWidth     : 1,
-        padding         : 12,
-        cornerRadius    : 8,
-        titleColor      : LIME,
-        bodyColor       : '#ffffff',
-        displayColors   : false,
+        backgroundColor: '#161616',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        titleColor: LIME,
+        bodyColor: '#ffffff',
+        displayColors: false,
     };
 
     /* ── HELPERS ──────────────────────────────────────────────── */
@@ -40,25 +42,25 @@ document.addEventListener('DOMContentLoaded', function () {
     function drawDonutRing(canvasId, pct, color, trackColor, size = 80) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
-        const ctx  = canvas.getContext('2d');
-        const cx   = size / 2, cy = size / 2;
-        const r    = (size / 2) - 9;
+        const ctx = canvas.getContext('2d');
+        const cx = size / 2, cy = size / 2;
+        const r = (size / 2) - 9;
         const startA = -Math.PI / 2;
-        const endA   = startA + (Math.PI * 2 * (pct / 100));
+        const endA = startA + (Math.PI * 2 * (pct / 100));
 
         ctx.clearRect(0, 0, size, size);
 
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.strokeStyle = trackColor || '#1e1e1e';
-        ctx.lineWidth   = 8;
+        ctx.lineWidth = 8;
         ctx.stroke();
 
         ctx.beginPath();
         ctx.arc(cx, cy, r, startA, endA);
         ctx.strokeStyle = color;
-        ctx.lineWidth   = 8;
-        ctx.lineCap     = 'round';
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
         ctx.stroke();
     }
 
@@ -76,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!el) return;
         const now = new Date();
         const start = new Date(now.getFullYear(), 0, 1);
-        const week  = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+        const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
         el.textContent = `Week ${week} of ${now.getFullYear()}`;
     }
     setWeekLabel();
@@ -86,17 +88,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const strip = document.getElementById('weekStrip');
         if (!strip) return;
         const today = new Date();
-        const dow   = today.getDay();
-        const days  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        const logs  = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
+        const dow = today.getDay();
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const logs = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
 
         strip.innerHTML = '';
         for (let i = 0; i < 7; i++) {
-            const d       = new Date(today);
+            const d = new Date(today);
             d.setDate(today.getDate() - dow + i);
             const isToday = d.toDateString() === today.toDateString();
             const dateStr = d.toISOString().split('T')[0];
-            const hasLog  = logs.some(l => l.date === dateStr);
+            const hasLog = logs.some(l => l.date === dateStr);
 
             const chip = document.createElement('div');
             chip.className = 'day-chip'
@@ -128,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.stroke();
 
         const startA = -Math.PI / 2;
-        const endA   = startA + (Math.PI * 2 * (pct / 100));
+        const endA = startA + (Math.PI * 2 * (pct / 100));
         ctx.beginPath();
         ctx.arc(cx, cy, r, startA, endA);
         ctx.strokeStyle = LIME;
@@ -172,13 +174,13 @@ document.addEventListener('DOMContentLoaded', function () {
     animateRing();
 
     /* ── GOAL RINGS ───────────────────────────────────────────── */
-    drawDonutRing('ringWorkouts', 80, LIME,  '#1e1e1e', 100);
-    drawDonutRing('ringSteps',    58, BLUE,  '#1e1e1e', 100);
+    drawDonutRing('ringWorkouts', 80, LIME, '#1e1e1e', 100);
+    drawDonutRing('ringSteps', 58, BLUE, '#1e1e1e', 100);
     drawDonutRing('ringCalories', 85, AMBER, '#1e1e1e', 100);
 
     /* ── COMBINED ACTIVITY + STEPS CHART (weekly) ────────────── */
-    const comboLabels    = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const durationData   = [45, 30, 60, 35, 45, 90, 20];
+    const comboLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const durationData = [45, 30, 60, 35, 45, 90, 20];
     const stepsDataCombo = [8.0, 7.5, 10.2, 6.0, 8.8, 12.0, 9.5];
 
     const comboCtx = document.getElementById('comboChart');
@@ -261,9 +263,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ── CALORIE BALANCE CHART ────────────────────────────────── */
-    const calBalLabels  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    const consumedData  = [1850, 2100, 1950, 2200, 1800, 2400, 2050];
-    const burnedData    = [2100, 1950, 2300, 1800, 2200, 1950, 1750];
+    const calBalLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const consumedData = [1850, 2100, 1950, 2200, 1800, 2400, 2050];
+    const burnedData = [2100, 1950, 2300, 1800, 2200, 1950, 1750];
 
     const calBalCtx = document.getElementById('calorieBalanceChart');
     if (calBalCtx) {
@@ -323,8 +325,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ── WEIGHT TREND CHART ───────────────────────────────────── */
-    const weightLabels = ['Apr 1','Apr 3','Apr 5','Apr 7','Apr 9','Apr 11','Apr 13','Apr 15','Apr 17','Apr 19','Apr 21','Apr 23','Apr 25','Apr 27','Apr 28'];
-    const weightData   = [74.2, 74.0, 73.8, 73.9, 73.5, 73.3, 73.1, 72.9, 73.0, 72.7, 72.5, 72.3, 72.4, 72.2, 72.1];
+    const weightLabels = ['Apr 1', 'Apr 3', 'Apr 5', 'Apr 7', 'Apr 9', 'Apr 11', 'Apr 13', 'Apr 15', 'Apr 17', 'Apr 19', 'Apr 21', 'Apr 23', 'Apr 25', 'Apr 27', 'Apr 28'];
+    const weightData = [74.2, 74.0, 73.8, 73.9, 73.5, 73.3, 73.1, 72.9, 73.0, 72.7, 72.5, 72.3, 72.4, 72.2, 72.1];
 
     const weightCtx = document.getElementById('weightChart');
     if (weightCtx) {
@@ -407,19 +409,19 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
 
     function generateAIInsight(logs) {
-        const actData  = [45, 30, 60, 0, 45, 90, 20];
-        const actDays  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const actData = [45, 30, 60, 0, 45, 90, 20];
+        const actDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         const stepsRef = [8000, 7500, 10200, 6000, 8800, 12000, 9500];
 
         const workoutCount = logs.length > 0 ? logs.length : 3;
 
-        const maxIdx      = actData.indexOf(Math.max(...actData));
-        const bestDay     = actDays[maxIdx];
-        const maxStepIdx  = stepsRef.indexOf(Math.max(...stepsRef));
+        const maxIdx = actData.indexOf(Math.max(...actData));
+        const bestDay = actDays[maxIdx];
+        const maxStepIdx = stepsRef.indexOf(Math.max(...stepsRef));
         const bestStepDay = actDays[maxStepIdx];
 
         const recentAvg = stepsRef.slice(-3).reduce((a, b) => a + b, 0) / 3;
-        const prevAvg   = stepsRef.slice(0, 4).reduce((a, b) => a + b, 0) / 4;
+        const prevAvg = stepsRef.slice(0, 4).reduce((a, b) => a + b, 0) / 4;
         const stepChange = Math.round(((recentAvg - prevAvg) / prevAvg) * 100);
 
         let text = `You've been most consistent on ${bestDay}s — ${workoutCount} workout${workoutCount !== 1 ? 's' : ''} logged this month. `;
@@ -453,17 +455,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── DATA FROM LOCALSTORAGE ───────────────────────────────── */
     function updateDashboard() {
-        const logs  = JSON.parse(localStorage.getItem('fitnessLogs'))  || [];
+        const logs = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
         const meals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
 
-        const totalSteps    = logs.reduce((s, l) => s + (parseInt(l.steps)    || 0), 0);
+        const totalSteps = logs.reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
         const workoutsCount = logs.length;
-        const avgSteps      = workoutsCount > 0 ? Math.round(totalSteps / workoutsCount) : 0;
+        const avgSteps = workoutsCount > 0 ? Math.round(totalSteps / workoutsCount) : 0;
 
         setStat('summaryWorkouts', workoutsCount || 18);
-        setStat('summarySteps',    avgSteps > 0  ? avgSteps.toLocaleString() : '8,420');
+        setStat('summarySteps', avgSteps > 0 ? avgSteps.toLocaleString() : '8,420');
         setStat('summaryCalories', '2,104');
-        setStat('summaryStreak',   '14');
+        setStat('summaryStreak', '14');
 
         // Steps today (hero card)
         const todayStr = new Date().toISOString().split('T')[0];
@@ -791,6 +793,6 @@ document.addEventListener('DOMContentLoaded', function () {
     /* ── INIT ─────────────────────────────────────────────────── */
     updateDashboard();
 
-    window.addEventListener('storage',     updateDashboard);
+    window.addEventListener('storage', updateDashboard);
     window.addEventListener('logsUpdated', updateDashboard);
 });

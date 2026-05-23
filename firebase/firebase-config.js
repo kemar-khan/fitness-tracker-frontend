@@ -1,0 +1,17 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAT7Wlkcx3SRMOTgx4m1z0hFxkawJTvkL0",
+    authDomain: "fitpulse-3e566.firebaseapp.com",
+    projectId: "fitpulse-3e566",
+    storageBucket: "fitpulse-3e566.firebasestorage.app",
+    messagingSenderId: "370979279481",
+    appId: "1:370979279481:web:29df4caff97af51e0dbaa8",
+    measurementId: "G-WF5044VT99"
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);

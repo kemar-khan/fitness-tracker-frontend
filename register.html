@@ -49,6 +49,15 @@
                 <button type="submit" class="btn-primary">Register Now</button>
             </form>
 
+            <div class="auth-divider"><span>or</span></div>
+
+            <button id="googleRegisterBtn" class="btn-google" type="button">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon" />
+                Continue with Google
+            </button>
+
+            <p id="registerError" class="error-msg"></p>
+
             <footer class="footer-links">
                 Already have an account? <a href="index.html">Login</a>
             </footer>
@@ -56,7 +65,7 @@
     </div>
 
     <!-- Custom JS -->
-    <script src="js/register.js"></script>
+    <script type="module" src="js/register.js"></script>
 </body>
 
 </html>

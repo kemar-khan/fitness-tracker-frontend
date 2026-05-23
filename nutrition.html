@@ -9,31 +9,17 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet" />
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/nutrition.css" />
 </head>
 
 <body>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">FitPulse</div>
-        <nav class="sidebar-nav">
-            <a href="dashboard.html" class="nav-item"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
-            <a href="fitness.html" class="nav-item"><i class="bi bi-activity"></i><span>Workouts</span></a>
-            <a href="nutrition.html" class="nav-item active"><i class="bi bi-egg-fried"></i><span>Nutrition</span></a>
-            <a href="notifications.html" class="nav-item"><i class="bi bi-bell-fill"></i><span>Alerts</span></a>
-            <a href="profile.html" class="nav-item"><i class="bi bi-person"></i><span>Profile</span></a>
-        </nav>
-        <a href="profile.html" class="sidebar-user">
-            <img src="https://i.pravatar.cc/40?img=12" alt="User" class="user-avatar" />
-            <div class="user-info">
-                <div style="font-size: 0.85rem; font-weight: 700;">Jordan Lee</div>
-                <div style="font-size: 0.7rem; color: var(--lime);">PRO MEMBER</div>
-            </div>
-        </a>
-    </aside>
+    <!-- sidebar -->
+    <div id="sidebar-placeholder"></div>
 
     <div class="main-wrapper">
         <header class="topbar">
@@ -95,8 +81,11 @@
                 <!-- Breakfast -->
                 <div class="meal-section" id="sectionBreakfast">
                     <div class="meal-section-header">
-                        <h3 class="meal-section-title"><i class="bi bi-sunrise"></i> Breakfast <span class="meal-count" id="countBreakfast">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Breakfast')"><i class="bi bi-plus-lg"></i> Add</button>
+                        <h3 class="meal-section-title"><i class="bi bi-sunrise"></i> Breakfast <span class="meal-count"
+                                id="countBreakfast">0</span></h3>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Breakfast')"><i
+                                class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsBreakfast">
                         <!-- Loaded by JS -->
@@ -106,8 +95,10 @@
                 <!-- Lunch -->
                 <div class="meal-section" id="sectionLunch">
                     <div class="meal-section-header">
-                        <h3 class="meal-section-title"><i class="bi bi-sun"></i> Lunch <span class="meal-count" id="countLunch">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Lunch')"><i class="bi bi-plus-lg"></i> Add</button>
+                        <h3 class="meal-section-title"><i class="bi bi-sun"></i> Lunch <span class="meal-count"
+                                id="countLunch">0</span></h3>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Lunch')"><i class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsLunch"></div>
                 </div>
@@ -115,8 +106,11 @@
                 <!-- Dinner -->
                 <div class="meal-section" id="sectionDinner">
                     <div class="meal-section-header">
-                        <h3 class="meal-section-title"><i class="bi bi-moon-stars"></i> Dinner <span class="meal-count" id="countDinner">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Dinner')"><i class="bi bi-plus-lg"></i> Add</button>
+                        <h3 class="meal-section-title"><i class="bi bi-moon-stars"></i> Dinner <span class="meal-count"
+                                id="countDinner">0</span></h3>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Dinner')"><i
+                                class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsDinner"></div>
                 </div>
@@ -124,8 +118,10 @@
                 <!-- Snacks -->
                 <div class="meal-section" id="sectionSnack">
                     <div class="meal-section-header">
-                        <h3 class="meal-section-title"><i class="bi bi-apple"></i> Snacks <span class="meal-count" id="countSnack">0</span></h3>
-                        <button class="btn-small" onclick="quickAdd('Snack')"><i class="bi bi-plus-lg"></i> Add</button>
+                        <h3 class="meal-section-title"><i class="bi bi-apple"></i> Snacks <span class="meal-count"
+                                id="countSnack">0</span></h3>
+                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Snack')"><i class="bi bi-plus-lg"></i>
+                            Add New</button>
                     </div>
                     <div class="meal-items" id="itemsSnack"></div>
                 </div>
@@ -139,6 +135,31 @@
                     <div class="search-bar">
                         <i class="bi bi-search"></i>
                         <input type="text" id="mealSearch" class="search-input" placeholder="Search meals..." />
+                    </div>
+                    <div class="discovery-filters">
+                        <select id="filterMealType" class="form-input">
+                            <option value="All">All Types</option>
+                            <option value="Breakfast">Breakfast</option>
+                            <option value="Lunch">Lunch</option>
+                            <option value="Dinner">Dinner</option>
+                            <option value="Snack">Snack</option>
+                        </select>
+                        <select id="filterDiet" class="form-input">
+                            <option value="All">All Diets</option>
+                            <option value="Vegetarian">Vegetarian</option>
+                            <option value="Vegan">Vegan</option>
+                            <option value="Keto">Keto</option>
+                            <option value="High-Protein">High-Protein</option>
+                            <option value="Low-Carb">Low-Carb</option>
+                        </select>
+                        <select id="filterCuisine" class="form-input">
+                            <option value="All">All Cuisines</option>
+                            <option value="Western">Western</option>
+                            <option value="Asian">Asian</option>
+                            <option value="Mediterranean">Mediterranean</option>
+                        </select>
+                        <input type="number" id="filterMaxCalories" class="form-input" min="0"
+                            placeholder="Max calories" />
                     </div>
                     <div class="meal-results" id="mealResults">
                         <!-- Loaded by JS -->
@@ -154,6 +175,120 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- MEAL DETAIL MODAL -->
+    <div class="modal-overlay" id="mealDetailModal">
+        <div class="modal-content meal-detail-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Meal Details</h2>
+                <button class="btn-small" id="closeMealDetailModal"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="meal-detail-header">
+                <div class="meal-detail-image" id="detailMealImage"></div>
+                <div class="meal-detail-summary">
+                    <h3 id="detailMealName">--</h3>
+                    <p class="meal-detail-meta" id="detailMealMeta">--</p>
+                    <div class="meal-detail-tags" id="detailMealTags"></div>
+                </div>
+            </div>
+
+            <div class="meal-detail-grid">
+                <div class="meal-detail-block">
+                    <div class="meal-detail-label">Calories</div>
+                    <div class="meal-detail-value" id="detailMealCalories">--</div>
+                </div>
+                <div class="meal-detail-block">
+                    <div class="meal-detail-label">Macros (P/C/F)</div>
+                    <div class="meal-detail-value" id="detailMealMacros">--</div>
+                </div>
+                <div class="meal-detail-block">
+                    <div class="meal-detail-label">Prep Time</div>
+                    <div class="meal-detail-value" id="detailMealPrepTime">--</div>
+                </div>
+            </div>
+
+            <div class="meal-detail-section">
+                <div class="meal-detail-section-title">Ingredients</div>
+                <ul class="meal-detail-list" id="detailMealIngredients"></ul>
+            </div>
+
+            <div class="meal-detail-section">
+                <div class="meal-detail-section-title">Instructions</div>
+                <p class="meal-detail-instructions" id="detailMealInstructions">--</p>
+            </div>
+
+            <div class="meal-detail-actions">
+                <div class="portion-picker" aria-label="Portion size">
+                    <span class="portion-label">Portion</span>
+                    <button type="button" class="portion-btn active" data-portion="1">1x</button>
+                    <button type="button" class="portion-btn" data-portion="0.5">0.5x</button>
+                    <button type="button" class="portion-btn" data-portion="1.5">1.5x</button>
+                    <button type="button" class="portion-btn" data-portion="2">2x</button>
+                </div>
+                <button type="button" class="btn-primary meal-detail-add" id="addMealFromDetailBtn">
+                    <i class="bi bi-plus-lg"></i> Add to Journal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM MEAL MODAL -->
+    <div class="modal-overlay" id="customMealModal">
+        <div class="modal-content custom-meal-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Log Custom Meal</h2>
+                <button class="btn-small" id="closeCustomMealModal"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            <div class="custom-meal-hint">
+                Adding to <strong id="customMealCategoryLabel">--</strong>
+            </div>
+
+            <form id="customMealForm">
+                <div class="form-group">
+                    <label class="form-label">Meal Name</label>
+                    <input type="text" id="customMealName" class="form-input" placeholder="e.g. Nasi Lemak" required />
+                    <div class="field-error" id="customMealNameError" aria-live="polite"></div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Calories</label>
+                        <input type="number" id="customMealCalories" class="form-input" placeholder="600" required />
+                        <div class="field-error" id="customMealCaloriesError" aria-live="polite"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Protein (g)</label>
+                        <input type="number" id="customMealProtein" class="form-input" placeholder="20" />
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Carbs (g)</label>
+                        <input type="number" id="customMealCarbs" class="form-input" placeholder="70" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fat (g)</label>
+                        <input type="number" id="customMealFat" class="form-input" placeholder="25" />
+                    </div>
+                </div>
+
+                <div class="meal-detail-actions">
+                    <div class="portion-picker" aria-label="Portion size">
+                        <span class="portion-label">Portion</span>
+                        <button type="button" class="portion-btn active custom-portion-btn" data-portion="1">1x</button>
+                        <button type="button" class="portion-btn custom-portion-btn" data-portion="0.5">0.5x</button>
+                        <button type="button" class="portion-btn custom-portion-btn" data-portion="1.5">1.5x</button>
+                        <button type="button" class="portion-btn custom-portion-btn" data-portion="2">2x</button>
+                    </div>
+                    <button type="submit" class="btn-primary btn-block">
+                        <i class="bi bi-plus-lg"></i> Add to Journal
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- CALCULATOR MODAL -->
@@ -175,16 +310,31 @@
                     <div class="form-group">
                         <label class="form-label">Age</label>
                         <input type="number" id="age" class="form-input" required />
+                        <div class="field-error" id="ageError" aria-live="polite"></div>
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
-                        <label class="form-label">Height (cm)</label>
-                        <input type="number" id="height" class="form-input" required />
+                        <label class="form-label">Height</label>
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+                            <input type="number" id="height" class="form-input" required />
+                            <select id="heightUnit" class="form-input" style="width: 92px;">
+                                <option value="cm">cm</option>
+                                <option value="ft">ft</option>
+                            </select>
+                        </div>
+                        <div class="field-error" id="heightError" aria-live="polite"></div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Weight (kg)</label>
-                        <input type="number" id="weight" class="form-input" required />
+                        <label class="form-label">Weight</label>
+                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px;">
+                            <input type="number" id="weight" class="form-input" required />
+                            <select id="weightUnit" class="form-input" style="width: 92px;">
+                                <option value="kg">kg</option>
+                                <option value="lb">lb</option>
+                            </select>
+                        </div>
+                        <div class="field-error" id="weightError" aria-live="polite"></div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -195,13 +345,24 @@
                         <option value="1.55">Moderately Active</option>
                         <option value="1.725">Very Active</option>
                     </select>
+                    <div class="field-error" id="activityError" aria-live="polite"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Goal</label>
+                    <select id="goalType" class="form-input">
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="lose">Lose Weight</option>
+                        <option value="gain">Gain Weight</option>
+                    </select>
+                    <div class="field-error" id="goalTypeError" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn-primary" style="width: 100%;">Calculate & Apply</button>
                 </div>
             </form>
             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
-                <div style="font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
+                <div
+                    style="font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">
                     Last Calculation
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
@@ -209,6 +370,8 @@
                     <div>Category: <strong id="calcBmiCategory">--</strong></div>
                     <div>BMR: <strong id="calcBmr">--</strong></div>
                     <div>TDEE: <strong id="calcTdee">--</strong></div>
+                    <div>Target: <strong id="calcTargetCalories">--</strong></div>
+                    <div>Macros: <strong id="calcMacroTargets">--</strong></div>
                 </div>
             </div>
         </div>
@@ -225,6 +388,7 @@
                 <div class="form-group">
                     <label class="form-label">Calorie Budget</label>
                     <input type="number" id="manualGoal" class="form-input" placeholder="2500" required />
+                    <div class="field-error" id="manualGoalError" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn-primary" style="width: 100%;">Update Goal</button>
@@ -233,8 +397,10 @@
         </div>
     </div>
 
-    <!-- Custom JS -->
-    <script src="js/nutrition.js"></script>
+    <!-- sidebar -->
+    <script src="js/sidebar-loader.js"></script>
+    <script type="module" src="js/auth.js"></script> 
+    <script type="module" src="js/nutrition.js"></script>
 </body>
 
 </html>
