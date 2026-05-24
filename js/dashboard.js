@@ -177,8 +177,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── GOAL RINGS ───────────────────────────────────────────── */
     drawDonutRing('ringWorkouts', 80, LIME, '#1e1e1e', 100);
-    drawDonutRing('ringSteps', 58, BLUE, '#1e1e1e', 100);
-    drawDonutRing('ringCalories', 85, AMBER, '#1e1e1e', 100);
+    drawDonutRing('ringSteps',    58, BLUE, '#1e1e1e', 100);
+    drawDonutRing('ringCalories',  0, AMBER, '#1e1e1e', 100);
 
     /* ── COMBINED ACTIVITY + STEPS CHART (weekly) ────────────── */
     const comboLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -453,6 +453,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── FIRESTORE DATA ──────────────────────────────────────────── */
 
+    function updateCalorieUI(nutrition) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const meals = (nutrition.trackedMeals || []).filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr));
+
+        const consumed  = meals.reduce((s, m) => s + (m.calories || 0), 0);
+        const protein   = meals.reduce((s, m) => s + (m.protein  || 0), 0);
+        const carbs     = meals.reduce((s, m) => s + (m.carbs    || 0), 0);
+        const fat       = meals.reduce((s, m) => s + (m.fat      || 0), 0);
+        const goal      = nutrition.dailyGoal || 2000;
+        const pct       = Math.min(Math.round((consumed / goal) * 100), 100);
+
+        setStat('summaryCalories', consumed.toLocaleString());
+
+        const calNum = document.getElementById('calConsumed');
+        if (calNum) calNum.textContent = consumed.toLocaleString();
+
+        const calTgt = document.getElementById('calTarget');
+        if (calTgt) calTgt.textContent = goal.toLocaleString() + ' kcal';
+
+        const calPct = document.getElementById('calPctText');
+        if (calPct) calPct.textContent = pct + '%';
+
+        const calBar = document.getElementById('calBarFill');
+        if (calBar) calBar.style.width = pct + '%';
+
+        const macroGoals = { carbs: Math.round(goal * 0.50 / 4), fat: Math.round(goal * 0.25 / 9), protein: Math.round(goal * 0.25 / 4) };
+        const macroItems = document.querySelectorAll('.macro-item');
+        const macroMap   = [
+            { label: 'Carbs',   val: carbs,   goal: macroGoals.carbs,   color: '#B4D400' },
+            { label: 'Fat',     val: fat,     goal: macroGoals.fat,     color: '#F87171' },
+            { label: 'Protein', val: protein, goal: macroGoals.protein, color: '#38BDF8' },
+        ];
+        macroItems.forEach((item, i) => {
+            if (!macroMap[i]) return;
+            const { val, goal: g, color } = macroMap[i];
+            const w = Math.min(Math.round((val / g) * 100), 100);
+            const bar  = item.querySelector('.macro-bar');
+            const nums = item.querySelector('.macro-nums');
+            if (bar)  bar.style.setProperty('--w', w + '%');
+            if (nums) nums.innerHTML = `<span style="color:${color}">${val}g</span> / ${g}g`;
+        });
+
+        const calRingPct = pct;
+        drawDonutRing('ringCalories', calRingPct, AMBER, '#1e1e1e', 100);
+        const calRingPctEl = document.querySelector('#ringCalories')?.closest('.goal-ring-wrap')?.querySelector('.goal-ring-pct');
+        const calRingLblEl = document.querySelector('#ringCalories')?.closest('.goal-ring-item')?.querySelector('.goal-ring-label');
+        if (calRingPctEl) calRingPctEl.textContent = calRingPct + '%';
+        if (calRingLblEl) calRingLblEl.innerHTML = `Calorie Target<br><strong>${consumed.toLocaleString()} / ${goal.toLocaleString()} kcal</strong>`;
+    }
+
     function calcStreak(logs) {
         const dates = [...new Set(
             logs
@@ -558,9 +608,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const userDoc = await getDoc(doc(db, 'users', uid));
                 if (userDoc.exists()) {
                     const nutrition = userDoc.data().nutrition;
-                    if (nutrition && nutrition.calorieGoal) {
-                        setStat('summaryCalories', Math.round(nutrition.totalCalories || 0).toLocaleString());
-                    }
+                    if (nutrition) updateCalorieUI(nutrition);
                 }
             } catch (_) {}
         } catch (err) {
