@@ -1,6 +1,8 @@
 'use strict';
 import './auth.js';
-import { getStoredUid, loadFitnessLogs, loadNutritionState, loadUserProfile } from './firestore-data.js';
+import { auth, db } from './firebase-config.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -84,13 +86,13 @@ document.addEventListener('DOMContentLoaded', function () {
     setWeekLabel();
 
     /* ── WEEK STRIP ───────────────────────────────────────────── */
-    function buildWeekStrip() {
+    function buildWeekStrip(logs) {
+        if (!logs) logs = [];
         const strip = document.getElementById('weekStrip');
         if (!strip) return;
         const today = new Date();
         const dow = today.getDay();
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const logs = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
 
         strip.innerHTML = '';
         for (let i = 0; i < 7; i++) {
@@ -184,8 +186,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const stepsDataCombo = [8.0, 7.5, 10.2, 6.0, 8.8, 12.0, 9.5];
 
     const comboCtx = document.getElementById('comboChart');
+    let comboChartInst = null;
     if (comboCtx) {
-        new Chart(comboCtx, {
+        comboChartInst = new Chart(comboCtx, {
             data: {
                 labels: comboLabels,
                 datasets: [
@@ -409,31 +412,26 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
 
     function generateAIInsight(logs) {
-        const actData = [45, 30, 60, 0, 45, 90, 20];
-        const actDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const stepsRef = [8000, 7500, 10200, 6000, 8800, 12000, 9500];
-
-        const workoutCount = logs.length > 0 ? logs.length : 3;
-
-        const maxIdx = actData.indexOf(Math.max(...actData));
-        const bestDay = actDays[maxIdx];
-        const maxStepIdx = stepsRef.indexOf(Math.max(...stepsRef));
-        const bestStepDay = actDays[maxStepIdx];
-
-        const recentAvg = stepsRef.slice(-3).reduce((a, b) => a + b, 0) / 3;
-        const prevAvg = stepsRef.slice(0, 4).reduce((a, b) => a + b, 0) / 4;
-        const stepChange = Math.round(((recentAvg - prevAvg) / prevAvg) * 100);
-
-        let text = `You've been most consistent on ${bestDay}s — ${workoutCount} workout${workoutCount !== 1 ? 's' : ''} logged this month. `;
-
-        if (stepChange < -5) {
-            text += `Step average dropped ${Math.abs(stepChange)}%; try a 20 min walk after lunch to close the gap!`;
-        } else if (stepChange > 5) {
-            text += `Step average is up ${stepChange}% — great momentum! ${bestStepDay} was your peak with ${stepsRef[maxStepIdx].toLocaleString()} steps.`;
-        } else {
-            text += `Step count is holding steady. ${bestStepDay} was your peak day with ${stepsRef[maxStepIdx].toLocaleString()} steps.`;
+        if (logs.length === 0) {
+            return "No activity logged yet. Head to Workouts and log your first session to get personalised insights!";
         }
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const workouts = logs.filter(l => (l.category || l.type) === 'Workout');
+        const dayCounts = Array(7).fill(0);
+        workouts.forEach(w => { if (w.date) dayCounts[new Date(w.date).getDay()]++; });
+        const bestDay = dayNames[dayCounts.indexOf(Math.max(...dayCounts))];
 
+        const weekDates = getWeekDates();
+        const weekSteps = weekDates.map(date =>
+            logs.filter(l => l.date === date).reduce((s, l) => s + (parseInt(l.steps) || 0), 0)
+        );
+        const maxSteps = Math.max(...weekSteps);
+        const maxStepDay = dayNames[weekSteps.indexOf(maxSteps)];
+
+        let text = `You've been most consistent on ${bestDay}s — ${workouts.length} workout${workouts.length !== 1 ? 's' : ''} logged total. `;
+        text += maxSteps > 0
+            ? `${maxStepDay} was your peak step day this week with ${maxSteps.toLocaleString()} steps.`
+            : `Start tracking steps to see your peak day performance!`;
         return text;
     }
 
@@ -453,30 +451,121 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    /* ── DATA FROM LOCALSTORAGE ───────────────────────────────── */
-    function updateDashboard() {
-        const logs = JSON.parse(localStorage.getItem('fitnessLogs')) || [];
-        const meals = JSON.parse(localStorage.getItem('trackedMeals')) || [];
+    /* ── FIRESTORE DATA ──────────────────────────────────────────── */
 
-        const totalSteps = logs.reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
-        const workoutsCount = logs.length;
-        const avgSteps = workoutsCount > 0 ? Math.round(totalSteps / workoutsCount) : 0;
-
-        setStat('summaryWorkouts', workoutsCount || 18);
-        setStat('summarySteps', avgSteps > 0 ? avgSteps.toLocaleString() : '8,420');
-        setStat('summaryCalories', '2,104');
-        setStat('summaryStreak', '14');
-
-        // Steps today (hero card)
-        const todayStr = new Date().toISOString().split('T')[0];
-        const todayLog = logs.find(l => l.date === todayStr);
-        if (todayLog) {
-            const el = document.getElementById('stepsToday');
-            if (el) el.textContent = parseInt(todayLog.steps || 0).toLocaleString();
+    function calcStreak(logs) {
+        const dates = [...new Set(
+            logs
+                .filter(l => (l.category || l.type) === 'Workout' && l.date)
+                .map(l => l.date)
+        )].sort((a, b) => b.localeCompare(a));
+        if (dates.length === 0) return 0;
+        let streak = 1, latest = dates[0];
+        for (let i = 1; i < dates.length; i++) {
+            const [y, m, d] = latest.split('-').map(Number);
+            const prev = new Date(Date.UTC(y, m - 1, d));
+            prev.setUTCDate(prev.getUTCDate() - 1);
+            const prevStr = prev.toISOString().split('T')[0];
+            if (dates.includes(prevStr)) { streak++; latest = prevStr; } else break;
         }
+        return streak;
+    }
 
-        buildWeekStrip();
-        setAIText(generateAIInsight(logs));
+    function getWeekDates() {
+        const today = new Date();
+        const dow = today.getDay();
+        return Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(today);
+            d.setDate(today.getDate() - dow + i);
+            return d.toISOString().split('T')[0];
+        });
+    }
+
+    function updateWeeklyCharts(logs) {
+        if (!comboChartInst) return;
+        const weekDates = getWeekDates();
+        const durations = weekDates.map(date =>
+            logs.filter(l => l.date === date).reduce((s, l) => s + (parseInt(l.duration) || 0), 0)
+        );
+        const steps = weekDates.map(date => {
+            const total = logs.filter(l => l.date === date).reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+            return Math.round(total / 100) / 10;
+        });
+        comboChartInst.data.datasets[0].data = durations;
+        comboChartInst.data.datasets[1].data = steps;
+        comboChartInst.update();
+    }
+
+    function updateGoalRings(logs) {
+        const weekDates = getWeekDates();
+        const weekLogs = logs.filter(l => weekDates.includes(l.date));
+        const workoutsThisWeek = weekLogs.filter(l => (l.category || l.type) === 'Workout').length;
+        const workoutGoal = 5;
+        const workoutPct = Math.min(Math.round((workoutsThisWeek / workoutGoal) * 100), 100);
+        const stepGoalDays = weekDates.filter(date => {
+            const total = weekLogs.filter(l => l.date === date).reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+            return total >= 10000;
+        }).length;
+        const stepPct = Math.round((stepGoalDays / 7) * 100);
+
+        drawDonutRing('ringWorkouts', workoutPct, LIME, '#1e1e1e', 100);
+        drawDonutRing('ringSteps', stepPct, BLUE, '#1e1e1e', 100);
+
+        const wPctEl = document.querySelector('#ringWorkouts')?.closest('.goal-ring-wrap')?.querySelector('.goal-ring-pct');
+        const wLblEl = document.querySelector('#ringWorkouts')?.closest('.goal-ring-item')?.querySelector('.goal-ring-label');
+        if (wPctEl) wPctEl.textContent = workoutPct + '%';
+        if (wLblEl) wLblEl.innerHTML = `Workouts<br><strong>${workoutsThisWeek}/${workoutGoal}</strong>`;
+
+        const sPctEl = document.querySelector('#ringSteps')?.closest('.goal-ring-wrap')?.querySelector('.goal-ring-pct');
+        const sLblEl = document.querySelector('#ringSteps')?.closest('.goal-ring-item')?.querySelector('.goal-ring-label');
+        if (sPctEl) sPctEl.textContent = stepPct + '%';
+        if (sLblEl) sLblEl.innerHTML = `Step Goal<br><strong>${stepGoalDays}/7 days</strong>`;
+
+        const activeDays = weekDates.filter(date => logs.some(l => l.date === date)).length;
+        const progressPct = Math.round((activeDays / 7) * 100);
+        drawProgressRing(progressPct);
+        const ringPctEl = document.getElementById('ringPct');
+        if (ringPctEl) ringPctEl.textContent = progressPct + '%';
+    }
+
+    async function updateDashboard(uid) {
+        try {
+            const snap = await getDocs(collection(db, 'users', uid, 'activities'));
+            const logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            const workoutsCount = logs.filter(l => (l.category || l.type) === 'Workout').length;
+            const allSteps = logs.map(l => parseInt(l.steps) || 0).filter(s => s > 0);
+            const avgSteps = allSteps.length > 0 ? Math.round(allSteps.reduce((a, b) => a + b, 0) / allSteps.length) : 0;
+            const streak = calcStreak(logs);
+
+            setStat('summaryWorkouts', workoutsCount);
+            setStat('summarySteps', avgSteps > 0 ? avgSteps.toLocaleString() : '0');
+            setStat('summaryStreak', streak);
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todaySteps = logs.filter(l => l.date === todayStr).reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+            if (todaySteps > 0) setStat('stepsToday', todaySteps.toLocaleString());
+
+            const streakBadge = document.getElementById('streakDays');
+            if (streakBadge) streakBadge.textContent = streak;
+
+            buildWeekStrip(logs);
+            updateWeeklyCharts(logs);
+            updateGoalRings(logs);
+            setAIText(generateAIInsight(logs));
+
+            try {
+                const userDoc = await getDoc(doc(db, 'users', uid));
+                if (userDoc.exists()) {
+                    const nutrition = userDoc.data().nutrition;
+                    if (nutrition && nutrition.calorieGoal) {
+                        setStat('summaryCalories', Math.round(nutrition.totalCalories || 0).toLocaleString());
+                    }
+                }
+            } catch (_) {}
+        } catch (err) {
+            console.error('Dashboard load error:', err);
+        }
     }
 
     /* ── MODAL SYSTEM ────────────────────────────────────────────  */
@@ -791,8 +880,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ── INIT ─────────────────────────────────────────────────── */
-    updateDashboard();
-
-    window.addEventListener('storage', updateDashboard);
-    window.addEventListener('logsUpdated', updateDashboard);
+    buildWeekStrip([]);
+    onAuthStateChanged(auth, (user) => {
+        if (user) updateDashboard(user.uid);
+    });
 });
