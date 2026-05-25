@@ -17,6 +17,8 @@ import {
     onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+import { ACTIVITY_TYPES, MET_VALUES, ACTIVITY_ICONS, ACTIVITY_EMOJIS, LEGACY_TYPE_MAP, STEPS_PLACEHOLDERS } from './activity-config.js';
+
 document.addEventListener('DOMContentLoaded', async function () {
     const uid = await new Promise((resolve) => {
         onAuthStateChanged(auth, (user) => {
@@ -31,7 +33,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     const activityFeed = document.getElementById('activityFeed');
     const addLogForm = document.getElementById('addLogForm');
     const activityTypeSelect = document.getElementById('activityType');
-    const stepsField = document.getElementById('stepsField');
+    const stepsInput = document.getElementById('steps');
+    const durationInput = document.getElementById('duration');
+    const caloriesBurnedInput = document.getElementById('caloriesBurned');
 
     const addLogModal = document.getElementById('addLogModal');
     const openAddLogModal = document.getElementById('openAddLogModal');
@@ -39,6 +43,55 @@ document.addEventListener('DOMContentLoaded', async function () {
     const cancelBtn = document.getElementById('cancelBtn');
 
     let logs = [];
+
+    function getUserWeight() {
+        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        return parseFloat(userData.weight) || 70; // default 70 kg if not set
+    }
+
+    function calculateCalories(activityType, durationMin) {
+        const met = MET_VALUES[activityType] || 4;
+        const weight = getUserWeight();
+        const hours = durationMin / 60;
+        return Math.round(met * weight * hours);
+    }
+
+    function updateCaloriesEstimate() {
+        const type = activityTypeSelect?.value || 'Workout';
+        const dur = parseInt(durationInput?.value) || 0;
+        if (dur > 0 && caloriesBurnedInput) {
+            caloriesBurnedInput.value = calculateCalories(type, dur);
+        }
+    }
+
+    // Update the steps input placeholder to match the selected activity type.
+    function updateStepsPlaceholder() {
+        if (!stepsInput) return;
+        const type = activityTypeSelect?.value || 'Workout';
+        stepsInput.placeholder = STEPS_PLACEHOLDERS[type] || STEPS_PLACEHOLDERS._default;
+    }
+
+    // Populate both the form's category select and the filter select from ACTIVITY_TYPES.
+    // Centralising this here means adding a new activity type only requires editing activity-config.js.
+    function populateActivityDropdowns() {
+        if (activityTypeSelect) {
+            activityTypeSelect.innerHTML = ACTIVITY_TYPES.map(type =>
+                `<option value="${type}">${type}</option>`
+            ).join('');
+        }
+
+        const filterTypeEl = document.getElementById('filterType');
+        if (filterTypeEl) {
+            filterTypeEl.innerHTML =
+                `<option value="All">All Activities</option>` +
+                ACTIVITY_TYPES.map(type =>
+                    `<option value="${type}">${type}</option>`
+                ).join('');
+        }
+
+        // Set the initial placeholder to match whichever type is selected first
+        updateStepsPlaceholder();
+    }
 
     function listenToActivities() {
         const ref = collection(db, "users", uid, "activities");
@@ -114,6 +167,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             document.getElementById('modalTitle').textContent = 'Log Activity';
             addLogForm.reset();
             document.getElementById('editingId').value = '';
+            updateStepsPlaceholder(); // reset placeholder after form.reset() clears the select
             addLogModal.style.display = 'flex';
         });
     }
@@ -127,9 +181,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (activityTypeSelect) {
         activityTypeSelect.addEventListener('change', function () {
-            stepsField.style.display = this.value === 'Steps' ? 'block' : 'none';
+            updateStepsPlaceholder();
+            updateCaloriesEstimate();
         });
     }
+
+    durationInput?.addEventListener('input', updateCaloriesEstimate);
 
     function renderLogs() {
         if (!activityFeed) return;
@@ -145,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     <p>No activity logs found for these filters.</p>
                 </div>
             `;
-            updateStats(0, 0, 0);
+            updateStats(0, 0, 0, 0);
             return;
         }
 
@@ -163,11 +220,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                 <div class="activity-body">
                     <div class="activity-header">
                         <div class="activity-name">${logName}</div>
-                        <span class="activity-type-badge">${logType}</span>
+                        <span class="activity-type-badge">${ACTIVITY_EMOJIS[logType] ? ACTIVITY_EMOJIS[logType] + ' ' : ''}${logType}</span>
                     </div>
                     <div class="activity-stats">
                         <div class="stat-item"><i class="bi bi-clock"></i> ${log.duration} min</div>
-                        ${log.steps !== '--' ? `<div class="stat-item"><i class="bi bi-footprints"></i> ${log.steps} steps</div>` : ''}
+                        ${log.steps && log.steps !== '--' ? `<div class="stat-item"><i class="bi bi-footprints"></i> ${log.steps} steps</div>` : ''}
+                        ${log.caloriesBurned ? `<div class="stat-item">🔥 ${log.caloriesBurned} kcal</div>` : ''}
                         <div class="stat-item"><i class="bi bi-calendar3"></i> ${formatDate(log.date)}</div>
                     </div>
                     ${log.notes ? `<div class="activity-notes">${log.notes}</div>` : ''}
@@ -186,8 +244,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         const totalDuration = logs.reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
         const totalSteps = logs.reduce((sum, l) => sum + (parseInt(l.steps) || 0), 0);
+        const totalCalories = logs.reduce((sum, l) => sum + (parseInt(l.caloriesBurned) || 0), 0);
 
-        updateStats(logs.length, totalDuration, totalSteps);
+        // Cache total for dashboard to read
+        localStorage.setItem('fitpulseTotalCaloriesBurned', totalCalories);
+
+        updateStats(logs.length, totalDuration, totalSteps, totalCalories);
     }
 
     function applyFilters(data) {
@@ -205,10 +267,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     document.getElementById('applyFilters')?.addEventListener('click', renderLogs);
 
-    function updateStats(count, duration, steps) {
+    function updateStats(count, duration, steps, calories = 0) {
         setStat('statTotalLogs', count);
         setStat('statTotalDuration', duration);
         setStat('statTotalSteps', steps.toLocaleString());
+        setStat('statTotalCalories', calories);
     }
 
     function setStat(id, val) {
@@ -218,15 +281,15 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         if (id === 'statTotalDuration') {
             el.innerHTML = `${val} <small style="font-size: 1rem">min</small>`;
+        } else if (id === 'statTotalCalories') {
+            el.innerHTML = `${Number(val).toLocaleString()} <small style="font-size: 1rem">kcal</small>`;
         } else {
             el.textContent = val;
         }
     }
 
     function getIcon(type) {
-        if (type === 'Workout') return 'bi-lightning-charge';
-        if (type === 'Steps') return 'bi-walking';
-        return 'bi-activity';
+        return ACTIVITY_ICONS[type] || 'bi-activity';
     }
 
     function formatDate(dateStr) {
@@ -247,7 +310,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 category: document.getElementById('activityType').value,
                 type: document.getElementById('activityType').value,
                 duration: parseInt(document.getElementById('duration').value),
-                steps: document.getElementById('steps').value || '--',
+                steps: parseInt(document.getElementById('steps').value) || 0,
+                caloriesBurned: parseInt(document.getElementById('caloriesBurned').value) || 0,
                 date: document.getElementById('date').value,
                 time: document.getElementById('time').value,
                 notes: document.getElementById('notes').value,
@@ -301,17 +365,24 @@ document.addEventListener('DOMContentLoaded', async function () {
         const log = logs.find(l => l.id === id);
         if (!log) return;
 
+        const rawType = log.category || log.type || 'Workout';
+        // Map legacy types to their modern equivalent so the dropdown always resolves
+        const actType = LEGACY_TYPE_MAP[rawType] || rawType;
+
         document.getElementById('modalTitle').textContent = 'Edit Activity';
         document.getElementById('activityName').value = log.activityName || log.name || '';
-        document.getElementById('activityType').value = log.category || log.type || 'Workout';
+        document.getElementById('activityType').value = actType;
         document.getElementById('duration').value = log.duration || '';
-        document.getElementById('steps').value = log.steps === '--' ? '' : log.steps;
+        // Show positive step counts; leave blank for 0 / '--' / missing values
+        const savedSteps = parseInt(log.steps);
+        document.getElementById('steps').value = savedSteps > 0 ? savedSteps : '';
         document.getElementById('date').value = log.date || '';
         document.getElementById('time').value = log.time || '';
         document.getElementById('notes').value = log.notes || '';
+        document.getElementById('caloriesBurned').value = log.caloriesBurned || 0;
         document.getElementById('editingId').value = log.id;
 
-        stepsField.style.display = (log.category || log.type) === 'Steps' ? 'block' : 'none';
+        updateStepsPlaceholder(); // reflect the loaded activity type in the placeholder
         addLogModal.style.display = 'flex';
     };
 
@@ -325,5 +396,6 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     };
 
+    populateActivityDropdowns();
     listenToActivities();
 });
