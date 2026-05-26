@@ -7,7 +7,7 @@
 import './auth.js';
 import { auth } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { loadNutritionState, saveNutritionState } from './firestore-data.js';
+import { loadNutritionState, saveNutritionState, saveCalorieHistoryDay } from './firestore-data.js';
 
 let nutritionAppStarted = false;
 
@@ -34,6 +34,8 @@ async function startNutritionApp(uid) {
     let trackedMeals = [];
     let dailyGoal = 2500;
     let calorieMetrics = null;
+    let waterGlasses = 0;
+    let waterDate = '';
 
     // --- DOM ---
     const mealSearch = document.getElementById('mealSearch');
@@ -57,22 +59,68 @@ async function startNutritionApp(uid) {
     let customCategory = null;
     let customPortion = 1;
 
+    function getTodayKey() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function mealIsToday(trackedAt) {
+        if (!trackedAt) return false;
+        const mealDate = new Date(trackedAt);
+        const now = new Date();
+        return mealDate.getFullYear() === now.getFullYear()
+            && mealDate.getMonth() === now.getMonth()
+            && mealDate.getDate() === now.getDate();
+    }
+
+    function getTodayMeals() {
+        return trackedMeals.filter((m) => mealIsToday(m.trackedAt));
+    }
+
+    function getTodayConsumed() {
+        return getTodayMeals().reduce((sum, m) => sum + m.calories, 0);
+    }
+
+    function syncWaterForToday() {
+        const today = getTodayKey();
+        if (waterDate !== today) {
+            waterDate = today;
+            waterGlasses = 0;
+        }
+    }
+
     function applyNutritionState(state) {
         if (!state) return;
         trackedMeals = Array.isArray(state.trackedMeals) ? state.trackedMeals : [];
         favorites = Array.isArray(state.favorites) ? state.favorites : [];
         dailyGoal = Number.isFinite(state.dailyGoal) ? state.dailyGoal : 2500;
         calorieMetrics = state.calorieMetrics ?? null;
+        waterGlasses = Number.isFinite(state.waterGlasses) ? state.waterGlasses : 0;
+        waterDate = state.waterDate || '';
+        syncWaterForToday();
     }
 
     function persistNutritionState() {
+        syncWaterForToday();
+        const todayKey = getTodayKey();
+        const consumed = getTodayConsumed();
+
         saveNutritionState(uid, {
             trackedMeals,
             favorites,
             dailyGoal,
-            calorieMetrics
+            calorieMetrics,
+            waterGlasses,
+            waterDate
         }).catch((error) => {
             console.error('Unable to save nutrition state to Firestore:', error);
+        });
+
+        saveCalorieHistoryDay(uid, todayKey, { consumed, goal: dailyGoal }).catch((error) => {
+            console.error('Unable to save calorie history to Firestore:', error);
         });
     }
 
@@ -82,6 +130,7 @@ async function startNutritionApp(uid) {
         renderFavorites();
         updateStats();
         renderCalorieMetrics();
+        updateWaterUI();
     }
 
     // ── JOURNAL RENDERING ───────────────────────────────────────
@@ -92,7 +141,7 @@ async function startNutritionApp(uid) {
             const countEl = document.getElementById(`count${cat}`);
             if (!container) return;
 
-            const items = trackedMeals.filter(m => m.category === cat);
+            const items = trackedMeals.filter(m => m.category === cat && mealIsToday(m.trackedAt));
             countEl.textContent = items.length;
 
             if (items.length === 0) {
@@ -200,17 +249,42 @@ async function startNutritionApp(uid) {
 
     // ── STATS ───────────────────────────────────────────────────
     function updateStats() {
-        const consumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
+        const todayMeals = getTodayMeals();
+        const consumed = todayMeals.reduce((sum, m) => sum + m.calories, 0);
         const remaining = dailyGoal - consumed;
 
-        const protein = trackedMeals.reduce((sum, m) => sum + m.protein, 0);
-        const carbs = trackedMeals.reduce((sum, m) => sum + m.carbs, 0);
-        const fat = trackedMeals.reduce((sum, m) => sum + m.fat, 0);
+        const protein = todayMeals.reduce((sum, m) => sum + m.protein, 0);
+        const carbs = todayMeals.reduce((sum, m) => sum + m.carbs, 0);
+        const fat = todayMeals.reduce((sum, m) => sum + m.fat, 0);
 
         document.getElementById('statDailyBudget').textContent = dailyGoal.toLocaleString();
         document.getElementById('statConsumed').textContent = consumed.toLocaleString();
         document.getElementById('statRemaining').textContent = remaining.toLocaleString();
         document.getElementById('statMacros').textContent = `${protein}g / ${carbs}g / ${fat}g`;
+    }
+
+    function updateWaterUI() {
+        const countEl = document.getElementById('statWaterGlasses');
+        if (countEl) countEl.textContent = String(waterGlasses);
+    }
+
+    function changeWaterGlasses(delta) {
+        syncWaterForToday();
+        waterGlasses = Math.max(0, waterGlasses + delta);
+        persistNutritionState();
+        updateWaterUI();
+    }
+
+    function startDayRolloverWatcher() {
+        let activeDay = getTodayKey();
+        setInterval(() => {
+            const todayKey = getTodayKey();
+            if (todayKey === activeDay) return;
+            activeDay = todayKey;
+            syncWaterForToday();
+            persistNutritionState();
+            refreshUI();
+        }, 60000);
     }
 
     // ── CALORIE ENGINE (REUSABLE FORMULAS) ─────────────────────
@@ -727,11 +801,15 @@ async function startNutritionApp(uid) {
     filterCuisine?.addEventListener('change', () => renderDiscovery(mealSearch.value));
     filterMaxCalories?.addEventListener('input', () => renderDiscovery(mealSearch.value));
 
+    document.getElementById('waterMinusBtn')?.addEventListener('click', () => changeWaterGlasses(-1));
+    document.getElementById('waterPlusBtn')?.addEventListener('click', () => changeWaterGlasses(1));
+
     try {
         applyNutritionState(await loadNutritionState(uid));
     } catch (error) {
         console.error('Unable to load nutrition state from Firestore:', error);
     }
 
+    startDayRolloverWatcher();
     refreshUI();
 }

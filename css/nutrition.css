@@ -146,9 +146,26 @@ body {
 .summary-grid {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 20px;
     margin-bottom: 12px;
+}
+
+.water-card .water-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.water-card .water-btn {
+    flex-shrink: 0;
+}
+
+.water-card .water-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .summary-card {

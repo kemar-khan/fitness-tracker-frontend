@@ -85,3 +85,17 @@ export async function saveNutritionState(uid, nutritionState) {
         updatedAt: serverTimestamp()
     }, { merge: true });
 }
+
+function calorieHistoryDocRef(uid, dateKey) {
+    return doc(db, USERS_COLLECTION, uid, 'calorieHistory', dateKey);
+}
+
+export async function saveCalorieHistoryDay(uid, dateKey, { consumed, goal }) {
+    if (!uid || !dateKey) return;
+    await setDoc(calorieHistoryDocRef(uid, dateKey), {
+        date: dateKey,
+        consumed: Math.max(0, Math.round(consumed)),
+        goal: Math.max(0, Math.round(goal)),
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
