@@ -79,7 +79,7 @@
                 </div>
             </section>
 
-            <section class="metrics-strip">
+            <section class="metrics-strip metrics-strip--empty" id="metricsStrip">
                 <div class="metrics-strip-header">
                     <i class="bi bi-heart-pulse"></i>
                     <span>Body Metrics Snapshot</span>
@@ -101,6 +101,12 @@
                         <span class="metric-label">TDEE</span>
                         <span class="metric-value" id="mainCalcTdee">--</span>
                     </div>
+                </div>
+                <div class="metrics-strip-empty">
+                    <p>Run the calculator to see BMI, BMR, and TDEE.</p>
+                    <button type="button" class="btn-small btn-section-add" id="openMetricsCalcBtn">
+                        <i class="bi bi-calculator"></i> Calculator
+                    </button>
                 </div>
             </section>
 

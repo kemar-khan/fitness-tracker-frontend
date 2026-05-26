@@ -307,6 +307,34 @@ body {
     font-size: 0.9rem;
 }
 
+.metrics-strip-empty {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.metrics-strip-empty p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.metrics-strip--empty {
+    padding: 14px 20px;
+}
+
+.metrics-strip--empty .metrics-strip-header,
+.metrics-strip--empty .metrics-grid {
+    display: none;
+}
+
+.metrics-strip--empty .metrics-strip-empty {
+    display: flex;
+    width: 100%;
+}
+
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

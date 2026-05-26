@@ -546,6 +546,9 @@ async function startNutritionApp(uid) {
                     : '--';
             }
         });
+
+        document.getElementById('metricsStrip')
+            ?.classList.toggle('metrics-strip--empty', !metrics);
     }
 
     // ── ACTIONS ─────────────────────────────────────────────────
@@ -878,6 +881,9 @@ async function startNutritionApp(uid) {
 
     document.getElementById('waterMinusBtn')?.addEventListener('click', () => changeWaterGlasses(-1));
     document.getElementById('waterPlusBtn')?.addEventListener('click', () => changeWaterGlasses(1));
+    document.getElementById('openMetricsCalcBtn')?.addEventListener('click', () => {
+        calculatorModal.style.display = 'flex';
+    });
 
     try {
         applyNutritionState(await loadNutritionState(uid));
