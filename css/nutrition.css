@@ -468,13 +468,25 @@ body {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin-bottom: 8px;
     display: block;
+}
+
+.discovery-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin-bottom: 16px;
+}
+
+.discovery-hint strong {
+    color: #d6d6d6;
+    font-weight: 700;
 }
 
 .search-bar {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .search-input {
@@ -506,6 +518,20 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    max-height: min(420px, 52vh);
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a2a transparent;
+}
+
+.meal-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.meal-results::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 3px;
 }
 
 .discovery-empty {

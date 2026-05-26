@@ -244,7 +244,7 @@ async function startNutritionApp(uid) {
             mealResults.innerHTML = `
                 <div class="empty-state empty-state-compact">
                     <div class="empty-title">No matches found</div>
-                    <div class="empty-subtitle">Try clearing filters, or log a custom meal with <strong>Add</strong> to save it for next time.</div>
+                    <div class="empty-subtitle">Try clearing filters or another search term.</div>
                     <button class="empty-cta" type="button" onclick="window.clearDiscoveryFilters()">Clear filters</button>
                 </div>
             `;
@@ -258,13 +258,13 @@ async function startNutritionApp(uid) {
                     <span class="result-name">${m.name}</span>
                     <span class="result-stats">${m.calories} kcal • ${m.category} • ${m.cuisine}</span>
                 </div>
-                <button class="btn-small" onclick="openMealDetails(${m.id})" title="View details">
+                <button class="btn-small" onclick="openMealDetails(${m.id})" title="View meal details" aria-label="View meal details">
                     <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="Toggle favorite">
+                <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="${isFavoriteMeal(m.id) ? 'Remove from favorites' : 'Add to favorites'}" aria-label="${isFavoriteMeal(m.id) ? 'Remove from favorites' : 'Add to favorites'}">
                     <i class="bi ${isFavoriteMeal(m.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
                 </button>
-                <button class="btn-small" onclick="openAddMeal(${m.id})" title="Add with portion">
+                <button class="btn-small" onclick="openAddMeal(${m.id})" title="Add to journal" aria-label="Add to journal">
                     <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
