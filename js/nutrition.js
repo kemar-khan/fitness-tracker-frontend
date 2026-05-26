@@ -31,6 +31,7 @@ async function startNutritionApp(uid) {
     ];
 
     let favorites = [];
+    let savedMeals = [];
     let trackedMeals = [];
     let dailyGoal = 2500;
     let calorieMetrics = null;
@@ -96,6 +97,7 @@ async function startNutritionApp(uid) {
         if (!state) return;
         trackedMeals = Array.isArray(state.trackedMeals) ? state.trackedMeals : [];
         favorites = Array.isArray(state.favorites) ? state.favorites : [];
+        savedMeals = Array.isArray(state.savedMeals) ? state.savedMeals : [];
         dailyGoal = Number.isFinite(state.dailyGoal) ? state.dailyGoal : 2500;
         calorieMetrics = state.calorieMetrics ?? null;
         waterGlasses = Number.isFinite(state.waterGlasses) ? state.waterGlasses : 0;
@@ -111,6 +113,7 @@ async function startNutritionApp(uid) {
         saveNutritionState(uid, {
             trackedMeals,
             favorites,
+            savedMeals,
             dailyGoal,
             calorieMetrics,
             waterGlasses,
@@ -148,8 +151,7 @@ async function startNutritionApp(uid) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-title">No meals logged yet</div>
-                        <div class="empty-subtitle">Add your first ${cat.toLowerCase()} by searching on the right.</div>
-                        <button class="empty-cta" type="button" onclick="window.quickAdd('${cat}')">Add ${cat}</button>
+                        <div class="empty-subtitle">Search meals on the right, or use <strong>Add</strong> for a custom entry.</div>
                     </div>
                 `;
             } else {
@@ -169,6 +171,54 @@ async function startNutritionApp(uid) {
         });
     }
 
+    function normalizeMealName(name) {
+        return (name || '').trim().toLowerCase();
+    }
+
+    function getSearchableMeals() {
+        return [...mealDatabase, ...savedMeals];
+    }
+
+    function findMealById(id) {
+        const matchId = Number(id);
+        return getSearchableMeals().find((m) => m.id === matchId || m.id === id);
+    }
+
+    function saveMealTemplate(meal) {
+        const key = normalizeMealName(meal.name);
+        if (!key) return;
+
+        const existingIdx = savedMeals.findIndex((m) => normalizeMealName(m.name) === key);
+        const template = {
+            id: existingIdx >= 0 ? savedMeals[existingIdx].id : meal.id,
+            name: meal.name.trim(),
+            category: meal.category,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat,
+            cuisine: 'Custom',
+            dietTags: ['Custom'],
+            ingredients: meal.ingredients || [],
+            prepTime: meal.prepTime || '--',
+            instructions: meal.instructions || '',
+            img: meal.img || ''
+        };
+
+        if (existingIdx >= 0) {
+            savedMeals[existingIdx] = template;
+        } else {
+            savedMeals.unshift(template);
+        }
+    }
+
+    function mealResultImage(meal) {
+        if (meal.img) {
+            return `<div class="result-img" style="background-image: url('${meal.img}')"></div>`;
+        }
+        return `<div class="result-img result-img-custom"><i class="bi bi-journal-text"></i></div>`;
+    }
+
     // ── DISCOVERY RENDERING ─────────────────────────────────────
     function renderDiscovery(query = '') {
         const q = query.trim().toLowerCase();
@@ -177,7 +227,7 @@ async function startNutritionApp(uid) {
         const selectedCuisine = filterCuisine?.value || 'All';
         const maxCalories = parseInt(filterMaxCalories?.value || '', 10);
 
-        const filtered = mealDatabase.filter((m) => {
+        const filtered = getSearchableMeals().filter((m) => {
             const textMatch = !q
                 || m.name.toLowerCase().includes(q)
                 || m.cuisine.toLowerCase().includes(q)
@@ -194,7 +244,7 @@ async function startNutritionApp(uid) {
             mealResults.innerHTML = `
                 <div class="empty-state empty-state-compact">
                     <div class="empty-title">No matches found</div>
-                    <div class="empty-subtitle">Try clearing filters or searching by ingredient (e.g. “chicken”, “oats”).</div>
+                    <div class="empty-subtitle">Try clearing filters, or log a custom meal with <strong>Add</strong> to save it for next time.</div>
                     <button class="empty-cta" type="button" onclick="window.clearDiscoveryFilters()">Clear filters</button>
                 </div>
             `;
@@ -203,7 +253,7 @@ async function startNutritionApp(uid) {
 
         mealResults.innerHTML = filtered.map(m => `
             <div class="result-item">
-                <div class="result-img" style="background-image: url('${m.img}')"></div>
+                ${mealResultImage(m)}
                 <div class="result-info">
                     <span class="result-name">${m.name}</span>
                     <span class="result-stats">${m.calories} kcal • ${m.category} • ${m.cuisine}</span>
@@ -475,15 +525,6 @@ async function startNutritionApp(uid) {
     }
 
     // ── ACTIONS ─────────────────────────────────────────────────
-    window.quickAdd = (category) => {
-        pendingCategory = category;
-        mealSearch.placeholder = `Search for ${category}...`;
-        mealSearch.focus();
-        // Visual cue
-        mealSearch.style.borderColor = 'var(--lime)';
-        setTimeout(() => mealSearch.style.borderColor = '', 1500);
-    };
-
     function scaleMeal(meal, portion) {
         return {
             calories: Math.round(meal.calories * portion),
@@ -521,7 +562,7 @@ async function startNutritionApp(uid) {
     };
 
     window.toggleFavoriteMeal = (id) => {
-        const meal = mealDatabase.find((m) => m.id === id);
+        const meal = findMealById(id);
         if (!meal) return;
 
         if (isFavoriteMeal(id)) {
@@ -538,7 +579,16 @@ async function startNutritionApp(uid) {
     function renderMealDetails(meal) {
         detailMealId = meal.id;
         detailPortion = 1;
-        document.getElementById('detailMealImage').style.backgroundImage = `url('${meal.img}')`;
+        const detailImage = document.getElementById('detailMealImage');
+        if (meal.img) {
+            detailImage.style.backgroundImage = `url('${meal.img}')`;
+            detailImage.classList.remove('meal-detail-image-custom');
+            detailImage.innerHTML = '';
+        } else {
+            detailImage.style.backgroundImage = 'none';
+            detailImage.classList.add('meal-detail-image-custom');
+            detailImage.innerHTML = '<i class="bi bi-journal-text"></i>';
+        }
         document.getElementById('detailMealName').textContent = meal.name;
         document.getElementById('detailMealMeta').textContent = `${meal.category} • ${meal.cuisine}`;
         updateDetailNutrition(meal, detailPortion);
@@ -572,7 +622,7 @@ async function startNutritionApp(uid) {
     };
 
     window.openMealDetails = (id) => {
-        const meal = mealDatabase.find((m) => m.id === id);
+        const meal = findMealById(id);
         if (!meal || !mealDetailModal) return;
         renderMealDetails(meal);
         mealDetailModal.style.display = 'flex';
@@ -632,7 +682,7 @@ async function startNutritionApp(uid) {
         if (e.target === customMealModal) closeCustomMeal();
     });
     document.getElementById('addMealFromDetailBtn')?.addEventListener('click', () => {
-        const meal = mealDatabase.find((m) => m.id === detailMealId);
+        const meal = findMealById(detailMealId);
         if (!meal) return;
         addMealToJournal(meal, detailPortion);
         closeMealDetail();
@@ -643,7 +693,7 @@ async function startNutritionApp(uid) {
             if (!Number.isFinite(nextPortion)) return;
             detailPortion = nextPortion;
             setActivePortionButton(detailPortion);
-            const meal = mealDatabase.find((m) => m.id === detailMealId);
+            const meal = findMealById(detailMealId);
             if (meal) updateDetailNutrition(meal, detailPortion);
         });
     });
@@ -712,6 +762,7 @@ async function startNutritionApp(uid) {
             instructions: ''
         };
 
+        saveMealTemplate(customMeal);
         addMealToJournal(customMeal, customPortion);
         closeCustomMeal();
     });

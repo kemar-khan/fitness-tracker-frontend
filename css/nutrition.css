@@ -514,6 +514,24 @@ body {
     flex-shrink: 0;
 }
 
+.result-img-custom {
+    background: var(--lime-muted);
+    color: var(--lime);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+.meal-detail-image-custom {
+    background: var(--lime-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lime);
+    font-size: 2rem;
+}
+
 .result-info {
     flex: 1;
     min-width: 0;

@@ -96,9 +96,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-sunrise"></i> Breakfast <span class="meal-count"
                                 id="countBreakfast">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Breakfast')"><i
-                                class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Breakfast')"
+                            aria-label="Log custom breakfast">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsBreakfast">
                         <!-- Loaded by JS -->
@@ -110,8 +111,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-sun"></i> Lunch <span class="meal-count"
                                 id="countLunch">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Lunch')"><i class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Lunch')"
+                            aria-label="Log custom lunch">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsLunch"></div>
                 </div>
@@ -121,9 +124,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-moon-stars"></i> Dinner <span class="meal-count"
                                 id="countDinner">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Dinner')"><i
-                                class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Dinner')"
+                            aria-label="Log custom dinner">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsDinner"></div>
                 </div>
@@ -133,8 +137,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-apple"></i> Snacks <span class="meal-count"
                                 id="countSnack">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Snack')"><i class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Snack')"
+                            aria-label="Log custom snack">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsSnack"></div>
                 </div>
@@ -164,6 +170,7 @@
                             <option value="Keto">Keto</option>
                             <option value="High-Protein">High-Protein</option>
                             <option value="Low-Carb">Low-Carb</option>
+                            <option value="Custom">My custom meals</option>
                         </select>
                         <select id="filterCuisine" class="form-input">
                             <option value="All">All Cuisines</option>
