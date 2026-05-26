@@ -307,10 +307,34 @@ async function startNutritionApp(uid) {
         const carbs = todayMeals.reduce((sum, m) => sum + m.carbs, 0);
         const fat = todayMeals.reduce((sum, m) => sum + m.fat, 0);
 
+        const pct = dailyGoal > 0 ? Math.min(100, (consumed / dailyGoal) * 100) : 0;
+
         document.getElementById('statDailyBudget').textContent = dailyGoal.toLocaleString();
         document.getElementById('statConsumed').textContent = consumed.toLocaleString();
-        document.getElementById('statRemaining').textContent = remaining.toLocaleString();
+
+        const remainingEl = document.getElementById('statRemaining');
+        if (remainingEl) {
+            remainingEl.textContent = remaining.toLocaleString();
+            remainingEl.classList.toggle('stat-over', remaining < 0);
+        }
+
         document.getElementById('statMacros').textContent = `${protein}g / ${carbs}g / ${fat}g`;
+
+        const fill = document.getElementById('calorieProgressFill');
+        const bar = document.getElementById('calorieProgressBar');
+        const caption = document.getElementById('calorieProgressCaption');
+        if (fill) {
+            fill.style.width = `${pct}%`;
+            fill.classList.toggle('over', consumed > dailyGoal);
+        }
+        if (bar) {
+            bar.setAttribute('aria-valuenow', String(Math.round(pct)));
+        }
+        if (caption) {
+            caption.textContent = consumed > dailyGoal
+                ? `${(consumed - dailyGoal).toLocaleString()} kcal over budget`
+                : `${Math.round(pct)}% of daily budget`;
+        }
     }
 
     function updateWaterUI() {

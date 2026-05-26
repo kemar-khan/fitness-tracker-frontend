@@ -142,13 +142,84 @@ body {
     padding: 0 40px 40px;
 }
 
-/* ── SUMMARY GRID ─────────────────────────────────────────────── */
-.summary-grid {
+/* ── SUMMARY PANEL ───────────────────────────────────────────── */
+.summary-panel {
     grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.summary-row {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 20px;
-    margin-bottom: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.summary-hero-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.summary-hero-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.hero-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hero-stat-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+}
+
+.calorie-progress {
+    height: 8px;
+    margin-top: 4px;
+    background: var(--border);
+    border-radius: 100px;
+    overflow: hidden;
+}
+
+.calorie-progress-fill {
+    height: 100%;
+    width: 0;
+    background: var(--lime);
+    border-radius: 100px;
+    transition: width 0.35s ease;
+}
+
+.calorie-progress-fill.over {
+    background: #f87171;
+}
+
+.calorie-progress-caption {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.card-value-muted {
+    color: #d6d6d6;
+}
+
+.card-value-compact {
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.stat-over {
+    color: #f87171;
 }
 
 .water-card .water-controls {
@@ -195,14 +266,12 @@ body {
 }
 
 .edit-goal-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
     background: none;
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    padding: 4px;
     transition: 0.2s;
 }
 
@@ -896,8 +965,13 @@ body {
         padding: 24px 20px;
     }
 
-    .summary-grid {
-        grid-template-columns: 1fr 1fr;
+    .summary-hero-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .summary-row {
+        grid-template-columns: 1fr;
     }
 
     .metrics-grid {

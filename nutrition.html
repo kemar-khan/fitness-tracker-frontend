@@ -30,37 +30,52 @@
         </header>
 
         <main class="nutrition-content">
-            <!-- Summary Stats -->
-            <section class="summary-grid">
-                <div class="summary-card">
-                    <span class="card-label">Daily Budget</span>
-                    <span class="card-value" id="statDailyBudget">2,500</span>
-                    <button class="edit-goal-btn" id="editGoalBtn"><i class="bi bi-pencil"></i></button>
-                </div>
-                <div class="summary-card">
-                    <span class="card-label">Consumed</span>
-                    <span class="card-value" id="statConsumed">0</span>
-                </div>
-                <div class="summary-card">
-                    <span class="card-label">Remaining</span>
-                    <span class="card-value" id="statRemaining">2,500</span>
-                </div>
-                <div class="summary-card">
-                    <span class="card-label">Macros (P/C/F)</span>
-                    <span class="card-value" style="font-size: 1.4rem; color: #fff;" id="statMacros">0/0/0</span>
-                </div>
-                <div class="summary-card water-card">
-                    <span class="card-label">Water Today</span>
-                    <div class="water-controls">
-                        <button type="button" class="btn-small water-btn" id="waterMinusBtn" aria-label="Remove one glass">
-                            <i class="bi bi-dash-lg"></i>
-                        </button>
-                        <span class="card-value" id="statWaterGlasses">0</span>
-                        <button type="button" class="btn-small water-btn" id="waterPlusBtn" aria-label="Add one glass">
-                            <i class="bi bi-plus-lg"></i>
+            <section class="summary-panel">
+                <div class="summary-card summary-hero">
+                    <div class="summary-hero-head">
+                        <span class="card-label">Today's calories</span>
+                        <button type="button" class="edit-goal-btn" id="editGoalBtn" aria-label="Edit daily calorie goal">
+                            <i class="bi bi-pencil"></i>
                         </button>
                     </div>
-                    <span class="water-hint">glasses</span>
+                    <div class="summary-hero-stats">
+                        <div class="hero-stat">
+                            <span class="hero-stat-label">Consumed</span>
+                            <span class="card-value" id="statConsumed">0</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-label">Budget</span>
+                            <span class="card-value card-value-muted" id="statDailyBudget">2,500</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-label">Remaining</span>
+                            <span class="card-value" id="statRemaining">2,500</span>
+                        </div>
+                    </div>
+                    <div class="calorie-progress" id="calorieProgressBar" role="progressbar" aria-valuemin="0"
+                        aria-valuemax="100" aria-valuenow="0" aria-label="Daily calorie progress">
+                        <div class="calorie-progress-fill" id="calorieProgressFill"></div>
+                    </div>
+                    <p class="calorie-progress-caption" id="calorieProgressCaption">0% of daily budget</p>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-card">
+                        <span class="card-label">Macros (P / C / F)</span>
+                        <span class="card-value card-value-compact" id="statMacros">0g / 0g / 0g</span>
+                    </div>
+                    <div class="summary-card water-card">
+                        <span class="card-label">Water today</span>
+                        <div class="water-controls">
+                            <button type="button" class="btn-small water-btn" id="waterMinusBtn" aria-label="Remove one glass">
+                                <i class="bi bi-dash-lg"></i>
+                            </button>
+                            <span class="card-value" id="statWaterGlasses">0</span>
+                            <button type="button" class="btn-small water-btn" id="waterPlusBtn" aria-label="Add one glass">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                        <span class="water-hint">glasses</span>
+                    </div>
                 </div>
             </section>
 
