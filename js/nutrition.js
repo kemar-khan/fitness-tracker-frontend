@@ -638,7 +638,7 @@ async function startNutritionApp(uid) {
     }
 
     function setActivePortionButton(portion) {
-        document.querySelectorAll('.portion-btn').forEach((btn) => {
+        document.querySelectorAll('#mealDetailModal .portion-btn').forEach((btn) => {
             const btnPortion = parseFloat(btn.dataset.portion);
             btn.classList.toggle('active', btnPortion === portion);
         });
@@ -714,7 +714,7 @@ async function startNutritionApp(uid) {
         addMealToJournal(meal, detailPortion);
         closeMealDetail();
     });
-    document.querySelectorAll('.portion-btn').forEach((btn) => {
+    document.querySelectorAll('#mealDetailModal .portion-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
             const nextPortion = parseFloat(btn.dataset.portion);
             if (!Number.isFinite(nextPortion)) return;
