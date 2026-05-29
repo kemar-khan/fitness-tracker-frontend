@@ -2,23 +2,15 @@
 //  For profile.html + profile-settings.html
 
 import './auth.js';
-import { getStoredUid, loadUserProfile, saveUserProfile } from './firestore-data.js';
+import { ensureUserDocument, getStoredUid, loadUserProfile, saveUserProfile, loadPrivacySettings, savePrivacySettings } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', async function () {
     const isProfilePage  = !!document.getElementById('postsContainer');  // profile.html
     const isSettingsPage = !!document.getElementById('profileSection');  // profile-settings.html
 
     const uid = getStoredUid();
-
-    // Load existing user data or set defaults
-    let userData = JSON.parse(localStorage.getItem('userData')) || {
-        fullName: "Jane Doe",
-        email: "jane.doe@example.com",
-        age: 25,
-        height: 170,
-        weight: 65,
-        memberSince: "March 2024"
-    };
+    await ensureUserDocument(uid);
+    let userData = await loadUserProfile(uid);
 
     // ── Populate hero ──
     const nameEl = document.getElementById('displayFullName');
@@ -160,21 +152,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         populateForm();
 
         // ── Privacy toggle states ─────────────────
-        const privacySettings = JSON.parse(localStorage.getItem('privacySettings')) || {
+        let privacySettings = await loadPrivacySettings(uid) || {
             profileVisibility: false,
             dataSharing: false,
             locationTracking: false,
             googleHealth: false
         };
-
-        function loadPrivacyToggles() {
-            const keys = ['profileVisibility', 'dataSharing', 'locationTracking', 'googleHealth'];
-            keys.forEach(function (key) {
-                const el = document.getElementById(key);
-                if (el) el.checked = !!privacySettings[key];
-            });
-        }
-        loadPrivacyToggles();
 
         // ── Show Section ──────────────────────────────
         function showSection(sectionId) {
@@ -249,36 +232,32 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 
         // ── Submit Feedback ────────────────────────────
-        const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
-        if (submitFeedbackBtn) {
-            submitFeedbackBtn.addEventListener('click', function () {
-                const text = document.getElementById('feedbackText').value.trim();
-                if (!selectedRating && !text) {
-                    showToast('Please add a rating or a message before submitting.', 'error');
-                    return;
-                }
-                // In production this would POST to a backend
-                document.getElementById('feedbackText').value = '';
-                selectedRating = 0;
-                stars.forEach(function (s) { s.classList.remove('active', 'hover'); });
-                showToast('Thanks for your feedback!');
-            });
-        }
+        submitFeedbackBtn.addEventListener('click', async function () {
+            const text = document.getElementById('feedbackText').value.trim();
+            if (!selectedRating && !text) {
+                showToast('Please add a rating or a message before submitting.', 'error');
+                return;
+            }
+
+            await submitFeedback(uid, { rating: selectedRating, text });
+
+            document.getElementById('feedbackText').value = '';
+            selectedRating = 0;
+            stars.forEach(function (s) { s.classList.remove('active', 'hover'); });
+            showToast('Thanks for your feedback!');
+        });
 
         // ── Profile Form ───────────────────────────────
-        const profileDetailsForm = document.getElementById('profileDetailsForm');
-        if (profileDetailsForm) {
-            profileDetailsForm.addEventListener('submit', function (e) {
-                e.preventDefault();
-                userData.fullName = document.getElementById('fullName').value.trim();
-                userData.age = document.getElementById('age').value;
-                userData.height = document.getElementById('height').value;
-                userData.weight = document.getElementById('weight').value;
-                localStorage.setItem('userData', JSON.stringify(userData));
-                updateHero();
-                showToast('Profile updated successfully!');
-            });
-        }
+        profileDetailsForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            userData.fullName = document.getElementById('fullName').value.trim();
+            userData.age = document.getElementById('age').value;
+            userData.height = document.getElementById('height').value;
+            userData.weight = document.getElementById('weight').value;
+            await saveUserProfile(uid, userData); // replaces localStorage!!
+            updateHero();
+            showToast('Profile updated successfully!');
+        });
 
         // ── Privacy Settings Save ──────────────────────
         const savePrivacyBtn = document.getElementById('savePrivacyBtn');
@@ -288,11 +267,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                 privacySettings.dataSharing = document.getElementById('dataSharing').checked;
                 privacySettings.locationTracking = document.getElementById('locationTracking').checked;
                 privacySettings.googleHealth = document.getElementById('googleHealth').checked;
-                localStorage.setItem('privacySettings', JSON.stringify(privacySettings));
+                await savePrivacySettings(uid, privacySettings);
                 showToast('Privacy settings saved!');
             });
         }
 
+        // CHECK DENGAN YANA PASAL AUTH
         // ── Change Password ────────────────────────────
         const changePasswordForm = document.getElementById('changePasswordForm');
         if (changePasswordForm) {
@@ -369,6 +349,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 });
 
+// BAWAH NI BELUM MASUK FIREBASE
 // ── Image Preview Helper ───────────────────────────
 function previewImage(file) {
     const reader = new FileReader();
