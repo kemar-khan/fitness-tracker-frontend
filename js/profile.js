@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ════════════════════════════════════════════════════
     if (isSettingsPage) {
 
-        // ── updateHero (also refreshes after form save) ─
+        // updateHero
         function updateHero() {
             const nameEl = document.getElementById('displayFullName');
             const emailEl = document.getElementById('displayEmail');
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         populateForm();
 
-        // ── Load privacy toggle states ─────────────────
+        // ── Privacy toggle states ─────────────────
         const privacySettings = JSON.parse(localStorage.getItem('privacySettings')) || {
             profileVisibility: false,
             dataSharing: false,

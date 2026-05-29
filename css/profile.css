@@ -574,7 +574,7 @@ select.form-input option { background: var(--surface-alt); color: var(--text); }
     display: flex;
 } */
 
-/* ── DANGER ZONE (Enhanced Isolation) ───────────────────────── */
+/* ── DANGER ZONE ───────────────────────── */
 .danger-section {
     margin-top: 80px;
     border: 1px solid rgba(255, 68, 68, 0.2);
@@ -601,19 +601,14 @@ select.form-input option { background: var(--surface-alt); color: var(--text); }
 .toggle-row:last-of-type { border-bottom: none; }
 
 .toggle-info { flex: 1; padding-right: 24px; }
+
 .toggle-label {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 4px;
+    font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 4px;
 }
 .toggle-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
 
 .toggle-switch {
-    position: relative;
-    width: 48px;
-    height: 26px;
-    flex-shrink: 0;
+    position: relative; width: 48px; height: 26px; flex-shrink: 0;
 }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
 .toggle-track {
