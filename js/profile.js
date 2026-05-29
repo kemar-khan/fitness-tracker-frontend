@@ -1,9 +1,14 @@
 //  FitPulse — profile.js
 //  For profile.html + profile-settings.html
 
-document.addEventListener('DOMContentLoaded', function () {
+import './auth.js';
+import { getStoredUid, loadUserProfile, saveUserProfile } from './firestore-data.js';
+
+document.addEventListener('DOMContentLoaded', async function () {
     const isProfilePage  = !!document.getElementById('postsContainer');  // profile.html
     const isSettingsPage = !!document.getElementById('profileSection');  // profile-settings.html
+
+    const uid = getStoredUid();
 
     // Load existing user data or set defaults
     let userData = JSON.parse(localStorage.getItem('userData')) || {

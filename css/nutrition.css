@@ -431,6 +431,48 @@ body {
     text-align: center;
 }
 
+.empty-state {
+    border: 1px dashed var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius);
+    padding: 14px;
+    text-align: center;
+}
+
+.empty-state-compact {
+    padding: 12px;
+    border-radius: 10px;
+}
+
+.empty-title {
+    font-weight: 800;
+    color: #d6d6d6;
+    margin-bottom: 6px;
+}
+
+.empty-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+.empty-cta {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    background: var(--black);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.empty-cta:hover {
+    border-color: var(--lime);
+    color: var(--lime);
+}
+
 .result-item {
     background: var(--black);
     border: 1px solid var(--border);
@@ -550,6 +592,22 @@ body {
     color: #ff6b6b;
 }
 
+.btn-section-add {
+    width: auto;
+    height: auto;
+    min-height: 34px;
+    padding: 8px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-left: 10px;
+}
+
+
 /* ── MODALS (Reused) ────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;
@@ -589,6 +647,22 @@ body {
     border-color: var(--lime);
 }
 
+.form-input.invalid {
+    border-color: #ff6b6b;
+}
+
+.field-error {
+    display: none;
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: #ff6b6b;
+    line-height: 1.3;
+}
+
+.field-error.visible {
+    display: block;
+}
+
 .form-label {
     display: block;
     font-size: 0.8rem;
@@ -596,6 +670,232 @@ body {
     margin-bottom: 8px;
     text-transform: uppercase;
     font-weight: 700;
+}
+
+.meal-detail-modal {
+    max-width: 640px;
+}
+
+.meal-detail-header {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.meal-detail-image {
+    width: 100%;
+    height: 130px;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border);
+}
+
+.meal-detail-summary h3 {
+    font-size: 1.3rem;
+    margin-bottom: 6px;
+}
+
+.meal-detail-meta {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+}
+
+.meal-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.meal-tag {
+    font-size: 0.68rem;
+    background: var(--lime-muted);
+    color: var(--lime);
+    border: 1px solid rgba(180, 212, 0, 0.25);
+    border-radius: 100px;
+    padding: 4px 8px;
+    font-weight: 700;
+}
+
+.meal-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.meal-detail-block {
+    border: 1px solid var(--border);
+    background: var(--black);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.meal-detail-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+}
+
+.meal-detail-value {
+    color: var(--lime);
+    font-weight: 700;
+}
+
+.meal-detail-section {
+    margin-top: 10px;
+}
+
+.meal-detail-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.meal-detail-list {
+    margin-left: 18px;
+    color: #d6d6d6;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.meal-detail-instructions {
+    color: #d6d6d6;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.meal-detail-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.portion-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.portion-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-right: 2px;
+}
+
+.portion-btn {
+    border: 1px solid var(--border);
+    background: var(--black);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+    line-height: 1;
+}
+
+.portion-btn:hover {
+    border-color: var(--lime);
+}
+
+.portion-btn.active {
+    background: var(--lime);
+    color: var(--black);
+    border-color: var(--lime);
+}
+
+.meal-detail-add {
+    padding: 10px 16px;
+    border-radius: 12px;
+}
+
+.custom-meal-modal {
+    max-width: 560px;
+}
+
+.custom-meal-hint {
+    margin-top: 6px;
+    margin-bottom: 14px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+
+    background: var(--surface-alt);
+    color: var(--text);
+
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--lime);
+
+    border-radius: var(--radius);
+
+    padding: 14px 18px;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-weight: 700;
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    opacity: 0;
+    transform: translateY(16px);
+
+    transition: 0.3s ease;
+
+    z-index: 2000;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* SUCCESS */
+
+.toast-success {
+    border-left: 4px solid var(--lime);
+}
+
+.toast-success i {
+    color: var(--lime);
+}
+
+/* ERROR */
+
+.toast-error {
+    border-left: 4px solid #ff4444;
+}
+
+.toast-error i {
+    color: #ff4444;
+}
+
+/* ICON */
+
+.toast i {
+    font-size: 1.2rem;
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────────────── */
@@ -633,6 +933,18 @@ body {
     }
 
     .discovery-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .meal-detail-header {
+        grid-template-columns: 1fr;
+    }
+
+    .meal-detail-image {
+        height: 180px;
+    }
+
+    .meal-detail-grid {
         grid-template-columns: 1fr;
     }
 }
