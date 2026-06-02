@@ -5,6 +5,8 @@ import {
     setDoc,
     updateDoc,
     getDocs,
+    deleteDoc,
+    collection,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -25,8 +27,10 @@ export function setStoredUid(uid) {
 
 export async function ensureUserDocument(uid, userData = {}) {
     if (!uid) return;
-
     const ref = userDocRef(uid);
+    const snap = await getDoc(ref); // check first!!
+    if (snap.exists()) return; 
+
     await setDoc(ref, {
         profile: {
             fullName: userData.fullName || 'FitPulse Member',
@@ -36,6 +40,7 @@ export async function ensureUserDocument(uid, userData = {}) {
             age: userData.age || 0,
             height: userData.height || 0,
             weight: userData.weight || 0,
+            isDeactivated: false,
         },
         goals: {
             weeklyWorkouts: 0,
@@ -53,6 +58,11 @@ export async function ensureUserDocument(uid, userData = {}) {
     }, { merge: true });
 }
 
+export async function deleteUserDocument(uid) {
+    if (!uid) return;
+    await deleteDoc(userDocRef(uid));
+}
+
 export async function loadUserProfile(uid) {
     if (!uid) return null;
     const snap = await getDoc(userDocRef(uid));
@@ -65,6 +75,22 @@ export async function saveUserProfile(uid, profile) {
     if (!uid) return;
     await setDoc(userDocRef(uid), {
         profile,
+        updatedAt: serverTimestamp()
+    }, { merge: true });
+}
+
+export async function loadGoals(uid) {
+    if (!uid) return null;
+    const snap = await getDoc(userDocRef(uid));
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return data.goals || null;
+}
+
+export async function saveGoals(uid, goals) {
+    if (!uid) return;
+    await setDoc(userDocRef(uid), {
+        goals,
         updatedAt: serverTimestamp()
     }, { merge: true });
 }
@@ -87,8 +113,8 @@ export async function getWeightLogs(uid) {
     const snap = await getDoc(userDocRef(uid));
     if (!snap.exists()) return null;
     const weightLogRef = collection(db, 'users', uid, 'weightLogs');
-    const snap = await getDocs(weightLogRef);
-    return logsSnap.docs
+    const logSnap = await getDocs(weightLogRef);
+    return logSnap.docs
         .map(doc => doc.data())
         .sort((a, b) => new Date(a.date) - new Date(b.date));
 }

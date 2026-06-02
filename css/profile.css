@@ -279,6 +279,12 @@ body {
     color: var(--text-muted);
 }
 
+.goals-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 /* ── POSTS CARD ─────────────────────────────────────────────── */
 
 .posts-container {
@@ -476,6 +482,32 @@ select.form-input option { background: var(--surface-alt); color: var(--text); }
     background: var(--lime);
     color: var(--black);
     transform: translateY(-2px);
+}
+
+.edit-goals-btn {
+    background: var(--lime);
+    color: var(--black);
+    border: none;
+
+    width: 42px;
+    height: 42px;
+
+    border-radius: 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    transition: var(--transition);
+
+    font-size: 1.1rem;
+}
+
+.edit-goals-btn:hover {
+    background: var(--lime-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(180, 212, 0, 0.2);
 }
 
 .fab-wrapper {

@@ -52,8 +52,8 @@
                     <i class="bi bi-person-fill"></i>
                 </div>
                 <div class="profile-info">
-                    <h2 id="displayFullName">Jordan Lee</h2>
-                    <p id="displayEmail">jordan.lee@example.com</p>
+                    <h2 id="displayFullName">FitPulse Member</h2>
+                    <p id="displayEmail">fitpulse@example.com</p>
                 </div>
             </section>
 
@@ -65,6 +65,74 @@
                 <div class="summary-card">
                     <span class="card-label">Following</span>
                     <span class="card-value" id="followingCount">--</span>
+                </div>
+            </section>
+
+            <!-- Section 2: Fitness Goals -->
+            <section class="settings-section">
+
+                <header class="section-header goals-header">
+                    <div>
+                        <h3 class="section-title">Fitness Goals</h3>
+                        <p class="section-subtitle">
+                            Set and track your personal fitness targets.
+                        </p>
+                    </div>
+
+                    <button class="edit-goals-btn">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                </header>
+
+                <div class="achievements-grid">
+
+                    <div class="achievement-card">
+                        <i class="bi bi-fire achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Daily Calories</h4>
+                            <p id="goalCalories">0 kcal/day</p>
+                        </div>
+                    </div>
+
+                    <div class="achievement-card">
+                        <i class="bi bi-person-walking achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Daily Steps</h4>
+                            <p id="goalSteps">0 steps/day</p>
+                        </div>
+                    </div>
+
+                    <div class="achievement-card">
+                        <i class="bi bi-droplet-fill achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Daily Water</h4>
+                            <p id="goalWater">0 ml/day</p>
+                        </div>
+                    </div>
+
+                    <div class="achievement-card">
+                        <i class="bi bi-calendar2-week-fill achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Weekly Workouts</h4>
+                            <p id="goalWorkouts">0 workouts/week</p>
+                        </div>
+                    </div>
+
+                    <div class="achievement-card">
+                        <i class="bi bi-calculator achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Current BMI</h4>
+                            <p id="currentBMI">-- </p>
+                        </div>
+                    </div>
+
+                    <div class="achievement-card">
+                        <i class="bi bi-bullseye achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Current Weight</h4>
+                            <p id="currentWeight">-- kg</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -140,6 +208,80 @@
             <button class="fab-menu-item" onclick="openPostModal()">
                 <i class="bi bi-image"></i> Add Post
             </button>
+            <button class="fab-menu-item" onclick="openModal('logWeightModal')">
+                <i class="bi bi-speedometer2"></i> Log Weight
+            </button>
+        </div>
+    </div>
+
+    <!-- ── EDIT GOALS MODAL ── -->
+    <div class="modal-overlay" id="editGoalsOverlay">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Update Goals</h3>
+                <button class="modal-close" onclick="closeModal('editGoalsOverlay')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="form-grid" style="margin-bottom: 24px;">
+                <div class="form-group" style="grid-column: span 6;">
+                    <label class="form-label">Daily Calories (kcal)</label>
+                    <input type="number" class="form-input" id="inputCalories" placeholder="e.g. 2000" />
+                </div>
+                <div class="form-group" style="grid-column: span 6;">
+                    <label class="form-label">Daily Steps</label>
+                    <input type="number" class="form-input" id="inputSteps" placeholder="e.g. 10000" />
+                </div>
+                <div class="form-group" style="grid-column: span 6;">
+                    <label class="form-label">Daily Water (ml)</label>
+                    <input type="number" class="form-input" id="inputWater" placeholder="e.g. 2500" />
+                </div>
+                <div class="form-group" style="grid-column: span 6;">
+                    <label class="form-label">Weekly Workouts</label>
+                    <input type="number" class="form-input" id="inputWorkouts" placeholder="e.g. 4" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('editGoalsOverlay')">Cancel</button>
+                <button class="btn-primary" id="saveGoalsBtn">Save Goals</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── LOG WEIGHT MODAL ── -->
+    <div class="modal-overlay" id="logWeightModal">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Log Weight</h3>
+                <button class="modal-close" onclick="closeModal('logWeightModal')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="form-grid" style="margin-bottom: 16px;">
+                <div class="form-group" style="grid-column: span 6;">
+                    <label class="form-label">Weight (kg)</label>
+                    <input type="number" class="form-input" id="inputWeight" 
+                        placeholder="e.g. 72.5" step="0.1" />
+                </div>
+                <div class="form-group" style="grid-column: span 6;">
+                    <label class="form-label">Height (cm)</label>
+                    <input type="number" class="form-input" id="inputHeight" 
+                        placeholder="e.g. 170" />
+                </div>
+            </div>
+
+            <!-- live BMI preview -->
+            <div style="background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: center;">
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">Calculated BMI</p>
+                <p id="bmiPreview" style="font-size: 1.8rem; font-weight: 700; color: var(--lime);">--</p>
+                <p id="bmiCategory" style="font-size: 0.8rem; color: var(--text-muted);">Enter weight and height</p>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('logWeightModal')">Cancel</button>
+                <button class="btn-primary" id="saveWeightBtn">Log Weight</button>
+            </div>
         </div>
     </div>
 

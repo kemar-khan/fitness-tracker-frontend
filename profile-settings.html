@@ -72,8 +72,8 @@
                     <i class="bi bi-person-fill"></i>
                 </div>
                 <div class="profile-info">
-                    <h2 id="displayFullName">Jordan Lee</h2>
-                    <p id="displayEmail">jordan.lee@example.com</p>
+                    <h2 id="displayFullName">FitPulse Member</h2>
+                    <p id="displayEmail">fitpulse@example.com</p>
                 </div>
             </section>
 
@@ -91,7 +91,7 @@
                     </div>
                     <div class="form-group" style="grid-column: span 6;">
                         <label class="form-label">Email Address</label>
-                        <input type="email" class="form-input" id="email" value="jordan.lee@example.com" disabled />
+                        <input type="email" class="form-input" id="email" value="fitpulse@example.com" disabled />
                     </div>
                     <div class="form-group" style="grid-column: span 4;">
                         <label class="form-label">Age</label>
@@ -106,7 +106,7 @@
                         <input type="number" class="form-input" id="weight" value="72" />
                     </div>
                     <div class="form-actions" style="grid-column: span 12;">
-                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <button type="submit" class="btn-primary" id="saveProfileInfo">Save Changes</button>
                     </div>
                 </form>
             </section>
@@ -175,7 +175,7 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" class="btn-primary">Save Privacy Settings</button>
+                    <button type="button" class="btn-primary" id="savePrivacyBtn">Save Privacy Settings</button>
                 </div>
             </section>
            
@@ -184,6 +184,10 @@
                 <header class="section-header">
                     <h3 class="section-title">Security Settings</h3>
                     <p class="section-subtitle">Manage your password and authentication.</p>
+                    <p id="googleAuthMsg" style="display:none; color: var(--text-muted); font-size: 0.9rem;">
+                        <br><br><i class="bi bi-google"></i> 
+                        You signed in with Google. To change your password, manage it through your Google account.
+                    </p>
                 </header>
                 <form id="changePasswordForm" class="form-grid" style="max-width: 500px;">
                     <div class="form-group" style="grid-column: span 12;">
@@ -219,7 +223,7 @@
                         Your profile, workouts, and data will be hidden from others, but nothing will be deleted. 
                         You can reactivate at any time simply by logging back in with your credentials.
                     </div>
-                    <button class="btn-outline-warning">
+                    <button class="btn-outline-warning" id="deactivateBtn">
                         <i class="bi bi-pause-circle"></i> Deactivate Account
                     </button>
                 </div>
@@ -241,7 +245,7 @@
                         Once you delete your account, <strong style="color: #ff4444;">there is no going back.</strong> 
                         All your data will be permanently erased. Please be certain.
                     </p>
-                    <button class="btn-danger">
+                    <button class="btn-danger" id="deleteAccountBtn">
                         <i class="bi bi-trash3"></i> Delete My Account
                     </button>
                 </div>
@@ -338,15 +342,15 @@
                             </div>
                         </div>
                         <div class="form-label" style="margin-bottom: 8px;">Tell us more</div>
-                        <textarea class="feedback-textarea" placeholder="Please write anything — bugs, suggestions, compliments, we read it all."></textarea>
-                        <button class="btn-primary" type="button">Submit Feedback</button>
+                        <textarea class="feedback-textarea" id="feedbackText" placeholder="Please write anything — bugs, suggestions, compliments, we read it all."></textarea>
+                        <button class="btn-primary" type="button" id="submitFeedbackBtn">Submit Feedback</button>
                     </div>
                 </div>
             </section>
         </main>
     </div>
 
-        <!-- ── DEACTIVATE CONFIRM MODAL ── -->
+    <!-- ── DEACTIVATE CONFIRM MODAL ── -->
     <div class="modal-overlay" id="deactivateModalOverlay">
         <div class="modal-card" style="max-width: 440px;">
             <div class="modal-header">
@@ -357,7 +361,7 @@
                 Your account will be hidden from others. You can come back at any time by simply logging in again. Are you sure you want to deactivate?
             </p>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('deactivateModalOverlay')">Never mind</button>
+                <button class="btn-secondary" onclick="closeModal('deactivateModalOverlay')">Cancel</button>
                 <button class="btn-outline-warning" id="confirmDeactivateBtn">Yes, Deactivate</button>
             </div>
         </div>
@@ -390,6 +394,6 @@
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="js/profile.js"></script>
+    <script type="module" src="js/profile.js"></script>
 </body>
 </html>
