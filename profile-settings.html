@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- profile-settings.html -->
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Settings — FitPulse</title>
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/profile.css" />
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">FitPulse</div>
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
+            <a href="fitness.html" class="nav-item"><i class="bi bi-activity"></i><span>Workouts</span></a>
+            <a href="nutrition.html" class="nav-item"><i class="bi bi-egg-fried"></i><span>Nutrition</span></a>
+            <a href="notifications.html" class="nav-item"><i class="bi bi-bell-fill"></i><span>Alerts</span></a>
+            <a href="profile.html" class="nav-item active"><i class="bi bi-person"></i><span>Profile</span></a>
+        </nav>
+        <a href="profile.html" class="sidebar-user">
+            <img src="https://i.pravatar.cc/40?img=12" alt="User" class="user-avatar" />
+            <div class="user-info">
+                <div style="font-size: 0.85rem; font-weight: 700;">Jordan Lee</div>
+                <div style="font-size: 0.7rem; color: var(--lime);">PRO MEMBER</div>
+            </div>
+        </a>
+    </aside>
+
+    <div class="main-wrapper">
+        <header class="topbar">
+            <h1 class="page-title">Account <span>Settings</span></h1>
+
+            <!-- SETTINGS BUTTON -->
+            <div class="actions">
+                <div class="settings-wrapper">
+                    <button class="btn-settings" id="settingsBtn">
+                        <i class="bi bi-gear"></i> Settings
+                    </button>
+                    <div class="dropdown" id="settingsDropdown">
+                        <a href="profile.html">View Public Profile</a>
+                        <a href="#" data-section="privacySection">Privacy Settings</a>
+                        <a href="#" data-section="securitySection">Password &amp; Security</a>
+                        <a href="#" data-section="dangerSection">Deactivate Account</a>
+                        <a href="#" data-section="helpSection">Help</a>
+                    </div>
+                </div>
+
+                <!-- LOGOUT BUTTON -->
+                <button class="btn-logout" id="logoutBtn">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Info -->
+        <main class="profile-content">
+            <!-- Hero Info -->
+            <section class="profile-hero">
+                <div class="large-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="profile-info">
+                    <h2 id="displayFullName">FitPulse Member</h2>
+                    <p id="displayEmail">fitpulse@example.com</p>
+                </div>
+            </section>
+
+
+            <!-- Section 1: Profile Settings -->
+            <section class="settings-group" id="profileSection">
+                <header class="section-header">
+                    <h3 class="section-title">Personal Information</h3>
+                    <p class="section-subtitle">Update your fitness profile details.</p>
+                </header>
+                <form id="profileDetailsForm" class="form-grid">
+                    <div class="form-group" style="grid-column: span 6;">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="fullName" value="Jordan Lee" required />
+                    </div>
+                    <div class="form-group" style="grid-column: span 6;">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-input" id="email" value="fitpulse@example.com" disabled />
+                    </div>
+                    <div class="form-group" style="grid-column: span 4;">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-input" id="age" value="28" />
+                    </div>
+                    <div class="form-group" style="grid-column: span 4;">
+                        <label class="form-label">Height (cm)</label>
+                        <input type="number" class="form-input" id="height" value="175" />
+                    </div>
+                    <div class="form-group" style="grid-column: span 4;">
+                        <label class="form-label">Weight (kg)</label>
+                        <input type="number" class="form-input" id="weight" value="72" />
+                    </div>
+                    <div class="form-actions" style="grid-column: span 12;">
+                        <button type="submit" class="btn-primary" id="saveProfileInfo">Save Changes</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Section 2: Privacy Settings -->
+            <section class="settings-group" id="privacySection">
+                <header class="section-header">
+                    <h3 class="section-title">Privacy Settings</h3>
+                    <p class="section-subtitle">Control how your data and profile are used.</p>
+                </header>
+
+                <!-- Profile Visibility -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">Profile Visibility</div>
+                        <div class="toggle-desc">When turned on, your profile is private and only visible to you. Turn off to make it public.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="profileVisibility" checked />
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+
+                <!-- Data Sharing -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">Data Sharing Preferences</div>
+                        <div class="toggle-desc">Allow FitPulse to share anonymised fitness and health data with trusted third-party research partners to help improve health insights.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dataSharing" />
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+
+                <!-- Location Tracking -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <div class="toggle-label">Location Tracking</div>
+                        <div class="toggle-desc">Unless turned on, FitPulse will not collect any location data from your device.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="locationTracking" />
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+
+                <!-- Connected Apps -->
+                <div style="margin-top: 32px; margin-bottom: 8px;">
+                    <div class="toggle-label" style="margin-bottom: 4px;">Connected Apps</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Manage third-party app integrations linked to your FitPulse account.</div>
+                </div>
+
+                <div class="app-row">
+                    <div class="app-info">
+                        <div class="app-icon"><i class="bi bi-google"></i></div>
+                        <div>
+                            <div class="app-name">Google Health API</div>
+                            <div class="app-desc">Sync your steps, heart rate & activity data</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="googleHealth" />
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-primary" id="savePrivacyBtn">Save Privacy Settings</button>
+                </div>
+            </section>
+           
+            <!-- Section 3: Passwork & Security -->
+            <section class="settings-group" id="securitySection">
+                <header class="section-header">
+                    <h3 class="section-title">Security Settings</h3>
+                    <p class="section-subtitle">Manage your password and authentication.</p>
+                    <p id="googleAuthMsg" style="display:none; color: var(--text-muted); font-size: 0.9rem;">
+                        <br><br><i class="bi bi-google"></i> 
+                        You signed in with Google. To change your password, manage it through your Google account.
+                    </p>
+                </header>
+                <form id="changePasswordForm" class="form-grid" style="max-width: 500px;">
+                    <div class="form-group" style="grid-column: span 12;">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" required />
+                    </div>
+                    <div class="form-group" style="grid-column: span 12;">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" required />
+                    </div>
+                    <div class="form-group" style="grid-column: span 12;">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" class="form-input" required />
+                    </div>
+                    <div class="form-actions" style="grid-column: span 12;">
+                        <button type="submit" class="btn-primary">Update Password</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Section 4: Deactivate/ Delete Account-->
+            <section class="settings-group danger-section" id="dangerSection">
+                <header class="section-header danger-header">
+                    <h3 class="section-title">Deactivate / Delete Account</h3>
+                    <p class="section-subtitle">Manage account deactivation or permanent deletion.</p>
+                </header>
+
+                <!-- Deactivate -->
+                <div class="deactivate-card">
+                    <div class="deactivate-card-title">Deactivate Account</div>
+                    <div class="deactivate-card-desc">
+                        Deactivating your account is <strong style="color: var(--text);">temporary</strong>. 
+                        Your profile, workouts, and data will be hidden from others, but nothing will be deleted. 
+                        You can reactivate at any time simply by logging back in with your credentials.
+                    </div>
+                    <button class="btn-outline-warning" id="deactivateBtn">
+                        <i class="bi bi-pause-circle"></i> Deactivate Account
+                    </button>
+                </div>
+
+                <!-- Backup -->
+                <div class="backup-banner">
+                    <div class="backup-banner-text">
+                        <div class="backup-title">Back up your data before deleting</div>
+                        <div class="backup-desc">Download a copy of all your workouts, nutrition logs, and account information before permanently deleting your account.</div>
+                    </div>
+                    <button class="btn-secondary" style="flex-shrink: 0;">
+                        <i class="bi bi-download"></i> Download Data
+                    </button>
+                </div>
+
+                <!-- Delete Zone -->
+                <div>
+                    <p style="font-size: 0.9rem; color: #888; margin-bottom: 20px;">
+                        Once you delete your account, <strong style="color: #ff4444;">there is no going back.</strong> 
+                        All your data will be permanently erased. Please be certain.
+                    </p>
+                    <button class="btn-danger" id="deleteAccountBtn">
+                        <i class="bi bi-trash3"></i> Delete My Account
+                    </button>
+                </div>
+            </section>
+
+            <!-- Section 5: Help -->
+            <section class="settings-group" id="helpSection">
+                <header class="section-header">
+                    <h3 class="section-title">Help</h3>
+                    <p class="section-subtitle">Find answers, get in touch, or send us feedback.</p>
+                </header>
+
+                <!-- FAQ -->
+                <div class="accordion-item">
+                    <button class="accordion-trigger" onclick="toggleAccordion(this)">
+                        <span>Frequently Asked Questions</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="accordion-body">
+                        <div class="faq-item">
+                            <div class="faq-question">How do I deactivate my account?</div>
+                            <div class="faq-answer">Go to Account Settings → Deactivate Account. Deactivation is temporary — 
+                                your data is preserved and you can reactivate by logging back in at any time.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">How do I edit a post?</div>
+                            <div class="faq-answer">Navigate to your Profile, find the post you want to edit, tap the three-dot 
+                                menu (⋯) on the post card, then select "Edit Post".</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">How do I reset my password?</div>
+                            <div class="faq-answer">Head to Account Settings → Password & Security. Enter your current password 
+                                and choose a new one. If you've forgotten it, use "Forgot Password" on the login screen.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">How do I connect Google Health?</div>
+                            <div class="faq-answer">Go to Privacy Settings → Connected Apps and toggle Google Health API on. 
+                                You'll be prompted to authorise the connection via your Google account.</div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">Can I change my email address?</div>
+                            <div class="faq-answer">Email addresses are linked to your account identity and cannot be changed 
+                                directly. Please contact Support if you need assistance.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Support -->
+                <div class="accordion-item">
+                    <button class="accordion-trigger" onclick="toggleAccordion(this)">
+                        <span>Contact Support</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="accordion-body">
+                        <div class="contact-row">
+                            <div class="contact-icon"><i class="bi bi-telephone-fill"></i></div>
+                            <div>
+                                <div class="contact-label">Hotline</div>
+                                <div class="contact-value">+1 (800) 348-7853</div>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-icon"><i class="bi bi-envelope-fill"></i></div>
+                            <div>
+                                <div class="contact-label">Email</div>
+                                <div class="contact-value">support@fitpulse.app</div>
+                            </div>
+                        </div>
+                        <div class="contact-row">
+                            <div class="contact-icon"><i class="bi bi-clock-fill"></i></div>
+                            <div>
+                                <div class="contact-label">Hours</div>
+                                <div class="contact-value">Monday – Friday, 9 AM – 6 PM EST</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report / Feedback -->
+                <div class="accordion-item">
+                    <button class="accordion-trigger" onclick="toggleAccordion(this)">
+                        <span>Report a Problem / Feedback</span>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                    <div class="accordion-body">
+                        <div style="margin-bottom: 12px;">
+                            <div class="form-label" style="margin-bottom: 10px;">How would you rate your experience?</div>
+                            <div class="star-rating" id="starRating">
+                                <i class="bi bi-star-fill" data-value="1"></i>
+                                <i class="bi bi-star-fill" data-value="2"></i>
+                                <i class="bi bi-star-fill" data-value="3"></i>
+                                <i class="bi bi-star-fill" data-value="4"></i>
+                                <i class="bi bi-star-fill" data-value="5"></i>
+                            </div>
+                        </div>
+                        <div class="form-label" style="margin-bottom: 8px;">Tell us more</div>
+                        <textarea class="feedback-textarea" id="feedbackText" placeholder="Please write anything — bugs, suggestions, compliments, we read it all."></textarea>
+                        <button class="btn-primary" type="button" id="submitFeedbackBtn">Submit Feedback</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ── DEACTIVATE CONFIRM MODAL ── -->
+    <div class="modal-overlay" id="deactivateModalOverlay">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #f0a500;">Deactivate Account</h3>
+                <button class="modal-close" onclick="closeModal('deactivateModalOverlay')"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <p style="font-size:0.9rem; color: var(--text-muted); margin-bottom: 28px;">
+                Your account will be hidden from others. You can come back at any time by simply logging in again. Are you sure you want to deactivate?
+            </p>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('deactivateModalOverlay')">Cancel</button>
+                <button class="btn-outline-warning" id="confirmDeactivateBtn">Yes, Deactivate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── DELETE ACCOUNT CONFIRM MODAL ── -->
+    <div class="modal-overlay" id="deleteModalOverlay">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color:#ff4444;">Delete Account</h3>
+                <button class="modal-close" onclick="closeModal('deleteModalOverlay')"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <p style="font-size:0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+                This is <strong style="color:#ff4444;">permanent and irreversible.</strong> All your data — workouts, posts, nutrition logs — will be erased forever.
+            </p>
+            <p style="font-size:0.85rem; color: var(--text-muted); margin-bottom: 28px;">
+                Type <strong style="color: var(--text);">DELETE</strong> to confirm:
+            </p>
+            <input type="text" id="deleteConfirmInput" class="form-input" placeholder="Type DELETE here" style="margin-bottom: 24px;" />
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('deleteModalOverlay')">Cancel</button>
+                <button class="btn-danger" id="confirmDeleteBtn">Delete My Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TOAST NOTIFICATION ── -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script type="module" src="js/profile.js"></script>
+</body>
+</html>
