@@ -30,28 +30,56 @@
         </header>
 
         <main class="nutrition-content">
-            <!-- Summary Stats -->
-            <section class="summary-grid">
-                <div class="summary-card">
-                    <span class="card-label">Daily Budget</span>
-                    <span class="card-value" id="statDailyBudget">2,500</span>
-                    <button class="edit-goal-btn" id="editGoalBtn"><i class="bi bi-pencil"></i></button>
+            <section class="summary-panel">
+                <div class="summary-card summary-hero">
+                    <div class="summary-hero-head">
+                        <span class="card-label">Today's calories</span>
+                        <button type="button" class="edit-goal-btn" id="editGoalBtn" aria-label="Edit daily calorie goal">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                    <div class="summary-hero-stats">
+                        <div class="hero-stat">
+                            <span class="hero-stat-label">Consumed</span>
+                            <span class="card-value" id="statConsumed">0</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-label">Budget</span>
+                            <span class="card-value card-value-muted" id="statDailyBudget">2,500</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="hero-stat-label">Remaining</span>
+                            <span class="card-value" id="statRemaining">2,500</span>
+                        </div>
+                    </div>
+                    <div class="calorie-progress" id="calorieProgressBar" role="progressbar" aria-valuemin="0"
+                        aria-valuemax="100" aria-valuenow="0" aria-label="Daily calorie progress">
+                        <div class="calorie-progress-fill" id="calorieProgressFill"></div>
+                    </div>
+                    <p class="calorie-progress-caption" id="calorieProgressCaption">0% of daily budget</p>
                 </div>
-                <div class="summary-card">
-                    <span class="card-label">Consumed</span>
-                    <span class="card-value" id="statConsumed">0</span>
-                </div>
-                <div class="summary-card">
-                    <span class="card-label">Remaining</span>
-                    <span class="card-value" id="statRemaining">2,500</span>
-                </div>
-                <div class="summary-card">
-                    <span class="card-label">Macros (P/C/F)</span>
-                    <span class="card-value" style="font-size: 1.4rem; color: #fff;" id="statMacros">0/0/0</span>
+                <div class="summary-row">
+                    <div class="summary-card">
+                        <span class="card-label">Macros (P / C / F)</span>
+                        <span class="card-value card-value-compact" id="statMacros">0g / 0g / 0g</span>
+                    </div>
+                    <div class="summary-card water-card">
+                        <span class="card-label">Water today</span>
+                        <div class="water-controls">
+                            <button type="button" class="btn-small water-btn" id="waterMinusBtn" aria-label="Remove one glass">
+                                <i class="bi bi-dash-lg"></i>
+                            </button>
+                            <span class="card-value" id="statWaterGlasses">0</span>
+                            <button type="button" class="btn-small water-btn" id="waterPlusBtn" aria-label="Add one glass">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                        </div>
+                        <span class="water-hint">glasses</span>
+                    </div>
                 </div>
             </section>
 
-            <section class="metrics-strip">
+            <section class="metrics-strip metrics-strip--empty" id="metricsStrip">
                 <div class="metrics-strip-header">
                     <i class="bi bi-heart-pulse"></i>
                     <span>Body Metrics Snapshot</span>
@@ -74,6 +102,12 @@
                         <span class="metric-value" id="mainCalcTdee">--</span>
                     </div>
                 </div>
+                <div class="metrics-strip-empty">
+                    <p>Run the calculator to see BMI, BMR, and TDEE.</p>
+                    <button type="button" class="btn-small btn-section-add" id="openMetricsCalcBtn">
+                        <i class="bi bi-calculator"></i> Calculator
+                    </button>
+                </div>
             </section>
 
             <!-- Journal Column -->
@@ -83,9 +117,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-sunrise"></i> Breakfast <span class="meal-count"
                                 id="countBreakfast">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Breakfast')"><i
-                                class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Breakfast')"
+                            aria-label="Log custom breakfast">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsBreakfast">
                         <!-- Loaded by JS -->
@@ -97,8 +132,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-sun"></i> Lunch <span class="meal-count"
                                 id="countLunch">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Lunch')"><i class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Lunch')"
+                            aria-label="Log custom lunch">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsLunch"></div>
                 </div>
@@ -108,9 +145,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-moon-stars"></i> Dinner <span class="meal-count"
                                 id="countDinner">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Dinner')"><i
-                                class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Dinner')"
+                            aria-label="Log custom dinner">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsDinner"></div>
                 </div>
@@ -120,8 +158,10 @@
                     <div class="meal-section-header">
                         <h3 class="meal-section-title"><i class="bi bi-apple"></i> Snacks <span class="meal-count"
                                 id="countSnack">0</span></h3>
-                        <button class="btn-small btn-section-add" onclick="window.openCustomMeal('Snack')"><i class="bi bi-plus-lg"></i>
-                            Add New</button>
+                        <button type="button" class="btn-small btn-section-add" onclick="window.openCustomMeal('Snack')"
+                            aria-label="Log custom snack">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
                     </div>
                     <div class="meal-items" id="itemsSnack"></div>
                 </div>
@@ -132,6 +172,7 @@
                 <!-- Search -->
                 <div class="discovery-card">
                     <span class="discovery-title">Quick Search</span>
+                    <p class="discovery-hint">Search preset and saved meals here. Use <strong>Add</strong> in each meal section for custom logs.</p>
                     <div class="search-bar">
                         <i class="bi bi-search"></i>
                         <input type="text" id="mealSearch" class="search-input" placeholder="Search meals..." />
@@ -151,6 +192,7 @@
                             <option value="Keto">Keto</option>
                             <option value="High-Protein">High-Protein</option>
                             <option value="Low-Carb">Low-Carb</option>
+                            <option value="Custom">My custom meals</option>
                         </select>
                         <select id="filterCuisine" class="form-input">
                             <option value="All">All Cuisines</option>

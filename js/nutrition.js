@@ -12,7 +12,7 @@ import {
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { loadNutritionState, saveNutritionState } from './firestore-data.js';
+import { loadNutritionState, saveNutritionState, saveCalorieHistoryDay } from './firestore-data.js';
 
 let nutritionAppStarted = false;
 
@@ -36,9 +36,12 @@ async function startNutritionApp(uid) {
     ];
 
     let favorites = [];
+    let savedMeals = [];
     let trackedMeals = [];
     let dailyGoal = 2500;
     let calorieMetrics = null;
+    let waterGlasses = 0;
+    let waterDate = '';
 
     // --- DOM ---
     const mealSearch = document.getElementById('mealSearch');
@@ -62,22 +65,70 @@ async function startNutritionApp(uid) {
     let customCategory = null;
     let customPortion = 1;
 
+    function getTodayKey() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function mealIsToday(trackedAt) {
+        if (!trackedAt) return false;
+        const mealDate = new Date(trackedAt);
+        const now = new Date();
+        return mealDate.getFullYear() === now.getFullYear()
+            && mealDate.getMonth() === now.getMonth()
+            && mealDate.getDate() === now.getDate();
+    }
+
+    function getTodayMeals() {
+        return trackedMeals.filter((m) => mealIsToday(m.trackedAt));
+    }
+
+    function getTodayConsumed() {
+        return getTodayMeals().reduce((sum, m) => sum + m.calories, 0);
+    }
+
+    function syncWaterForToday() {
+        const today = getTodayKey();
+        if (waterDate !== today) {
+            waterDate = today;
+            waterGlasses = 0;
+        }
+    }
+
     function applyNutritionState(state) {
         if (!state) return;
         trackedMeals = Array.isArray(state.trackedMeals) ? state.trackedMeals : [];
         favorites = Array.isArray(state.favorites) ? state.favorites : [];
+        savedMeals = Array.isArray(state.savedMeals) ? state.savedMeals : [];
         dailyGoal = Number.isFinite(state.dailyGoal) ? state.dailyGoal : 2500;
         calorieMetrics = state.calorieMetrics ?? null;
+        waterGlasses = Number.isFinite(state.waterGlasses) ? state.waterGlasses : 0;
+        waterDate = state.waterDate || '';
+        syncWaterForToday();
     }
 
     function persistNutritionState() {
+        syncWaterForToday();
+        const todayKey = getTodayKey();
+        const consumed = getTodayConsumed();
+
         saveNutritionState(uid, {
             trackedMeals,
             favorites,
+            savedMeals,
             dailyGoal,
-            calorieMetrics
+            calorieMetrics,
+            waterGlasses,
+            waterDate
         }).catch((error) => {
             console.error('Unable to save nutrition state to Firestore:', error);
+        });
+
+        saveCalorieHistoryDay(uid, todayKey, { consumed, goal: dailyGoal }).catch((error) => {
+            console.error('Unable to save calorie history to Firestore:', error);
         });
     }
     async function createNotification(uid, type, title, message) {
@@ -128,6 +179,7 @@ async function startNutritionApp(uid) {
         renderFavorites();
         updateStats();
         renderCalorieMetrics();
+        updateWaterUI();
     }
 
     // ── JOURNAL RENDERING ───────────────────────────────────────
@@ -138,15 +190,14 @@ async function startNutritionApp(uid) {
             const countEl = document.getElementById(`count${cat}`);
             if (!container) return;
 
-            const items = trackedMeals.filter(m => m.category === cat);
+            const items = trackedMeals.filter(m => m.category === cat && mealIsToday(m.trackedAt));
             countEl.textContent = items.length;
 
             if (items.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-title">No meals logged yet</div>
-                        <div class="empty-subtitle">Add your first ${cat.toLowerCase()} by searching on the right.</div>
-                        <button class="empty-cta" type="button" onclick="window.quickAdd('${cat}')">Add ${cat}</button>
+                        <div class="empty-subtitle">Search meals on the right, or use <strong>Add</strong> for a custom entry.</div>
                     </div>
                 `;
             } else {
@@ -166,6 +217,54 @@ async function startNutritionApp(uid) {
         });
     }
 
+    function normalizeMealName(name) {
+        return (name || '').trim().toLowerCase();
+    }
+
+    function getSearchableMeals() {
+        return [...mealDatabase, ...savedMeals];
+    }
+
+    function findMealById(id) {
+        const matchId = Number(id);
+        return getSearchableMeals().find((m) => m.id === matchId || m.id === id);
+    }
+
+    function saveMealTemplate(meal) {
+        const key = normalizeMealName(meal.name);
+        if (!key) return;
+
+        const existingIdx = savedMeals.findIndex((m) => normalizeMealName(m.name) === key);
+        const template = {
+            id: existingIdx >= 0 ? savedMeals[existingIdx].id : meal.id,
+            name: meal.name.trim(),
+            category: meal.category,
+            calories: meal.calories,
+            protein: meal.protein,
+            carbs: meal.carbs,
+            fat: meal.fat,
+            cuisine: 'Custom',
+            dietTags: ['Custom'],
+            ingredients: meal.ingredients || [],
+            prepTime: meal.prepTime || '--',
+            instructions: meal.instructions || '',
+            img: meal.img || ''
+        };
+
+        if (existingIdx >= 0) {
+            savedMeals[existingIdx] = template;
+        } else {
+            savedMeals.unshift(template);
+        }
+    }
+
+    function mealResultImage(meal) {
+        if (meal.img) {
+            return `<div class="result-img" style="background-image: url('${meal.img}')"></div>`;
+        }
+        return `<div class="result-img result-img-custom"><i class="bi bi-journal-text"></i></div>`;
+    }
+
     // ── DISCOVERY RENDERING ─────────────────────────────────────
     function renderDiscovery(query = '') {
         const q = query.trim().toLowerCase();
@@ -174,7 +273,7 @@ async function startNutritionApp(uid) {
         const selectedCuisine = filterCuisine?.value || 'All';
         const maxCalories = parseInt(filterMaxCalories?.value || '', 10);
 
-        const filtered = mealDatabase.filter((m) => {
+        const filtered = getSearchableMeals().filter((m) => {
             const textMatch = !q
                 || m.name.toLowerCase().includes(q)
                 || m.cuisine.toLowerCase().includes(q)
@@ -191,7 +290,7 @@ async function startNutritionApp(uid) {
             mealResults.innerHTML = `
                 <div class="empty-state empty-state-compact">
                     <div class="empty-title">No matches found</div>
-                    <div class="empty-subtitle">Try clearing filters or searching by ingredient (e.g. “chicken”, “oats”).</div>
+                    <div class="empty-subtitle">Try clearing filters or another search term.</div>
                     <button class="empty-cta" type="button" onclick="window.clearDiscoveryFilters()">Clear filters</button>
                 </div>
             `;
@@ -200,18 +299,18 @@ async function startNutritionApp(uid) {
 
         mealResults.innerHTML = filtered.map(m => `
             <div class="result-item">
-                <div class="result-img" style="background-image: url('${m.img}')"></div>
+                ${mealResultImage(m)}
                 <div class="result-info">
                     <span class="result-name">${m.name}</span>
                     <span class="result-stats">${m.calories} kcal • ${m.category} • ${m.cuisine}</span>
                 </div>
-                <button class="btn-small" onclick="openMealDetails(${m.id})" title="View details">
+                <button class="btn-small" onclick="openMealDetails(${m.id})" title="View meal details" aria-label="View meal details">
                     <i class="bi bi-eye"></i>
                 </button>
-                <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="Toggle favorite">
+                <button class="btn-small ${isFavoriteMeal(m.id) ? 'active-favorite' : ''}" onclick="toggleFavoriteMeal(${m.id})" title="${isFavoriteMeal(m.id) ? 'Remove from favorites' : 'Add to favorites'}" aria-label="${isFavoriteMeal(m.id) ? 'Remove from favorites' : 'Add to favorites'}">
                     <i class="bi ${isFavoriteMeal(m.id) ? 'bi-heart-fill' : 'bi-heart'}"></i>
                 </button>
-                <button class="btn-small" onclick="openAddMeal(${m.id})" title="Add with portion">
+                <button class="btn-small" onclick="openAddMeal(${m.id})" title="Add to journal" aria-label="Add to journal">
                     <i class="bi bi-plus-lg"></i>
                 </button>
             </div>
@@ -246,17 +345,66 @@ async function startNutritionApp(uid) {
 
     // ── STATS ───────────────────────────────────────────────────
     function updateStats() {
-        const consumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
+        const todayMeals = getTodayMeals();
+        const consumed = todayMeals.reduce((sum, m) => sum + m.calories, 0);
         const remaining = dailyGoal - consumed;
 
-        const protein = trackedMeals.reduce((sum, m) => sum + m.protein, 0);
-        const carbs = trackedMeals.reduce((sum, m) => sum + m.carbs, 0);
-        const fat = trackedMeals.reduce((sum, m) => sum + m.fat, 0);
+        const protein = todayMeals.reduce((sum, m) => sum + m.protein, 0);
+        const carbs = todayMeals.reduce((sum, m) => sum + m.carbs, 0);
+        const fat = todayMeals.reduce((sum, m) => sum + m.fat, 0);
+
+        const pct = dailyGoal > 0 ? Math.min(100, (consumed / dailyGoal) * 100) : 0;
 
         document.getElementById('statDailyBudget').textContent = dailyGoal.toLocaleString();
         document.getElementById('statConsumed').textContent = consumed.toLocaleString();
-        document.getElementById('statRemaining').textContent = remaining.toLocaleString();
+
+        const remainingEl = document.getElementById('statRemaining');
+        if (remainingEl) {
+            remainingEl.textContent = remaining.toLocaleString();
+            remainingEl.classList.toggle('stat-over', remaining < 0);
+        }
+
         document.getElementById('statMacros').textContent = `${protein}g / ${carbs}g / ${fat}g`;
+
+        const fill = document.getElementById('calorieProgressFill');
+        const bar = document.getElementById('calorieProgressBar');
+        const caption = document.getElementById('calorieProgressCaption');
+        if (fill) {
+            fill.style.width = `${pct}%`;
+            fill.classList.toggle('over', consumed > dailyGoal);
+        }
+        if (bar) {
+            bar.setAttribute('aria-valuenow', String(Math.round(pct)));
+        }
+        if (caption) {
+            caption.textContent = consumed > dailyGoal
+                ? `${(consumed - dailyGoal).toLocaleString()} kcal over budget`
+                : `${Math.round(pct)}% of daily budget`;
+        }
+    }
+
+    function updateWaterUI() {
+        const countEl = document.getElementById('statWaterGlasses');
+        if (countEl) countEl.textContent = String(waterGlasses);
+    }
+
+    function changeWaterGlasses(delta) {
+        syncWaterForToday();
+        waterGlasses = Math.max(0, waterGlasses + delta);
+        persistNutritionState();
+        updateWaterUI();
+    }
+
+    function startDayRolloverWatcher() {
+        let activeDay = getTodayKey();
+        setInterval(() => {
+            const todayKey = getTodayKey();
+            if (todayKey === activeDay) return;
+            activeDay = todayKey;
+            syncWaterForToday();
+            persistNutritionState();
+            refreshUI();
+        }, 60000);
     }
 
     // ── CALORIE ENGINE (REUSABLE FORMULAS) ─────────────────────
@@ -444,18 +592,12 @@ async function startNutritionApp(uid) {
                     : '--';
             }
         });
+
+        document.getElementById('metricsStrip')
+            ?.classList.toggle('metrics-strip--empty', !metrics);
     }
 
     // ── ACTIONS ─────────────────────────────────────────────────
-    window.quickAdd = (category) => {
-        pendingCategory = category;
-        mealSearch.placeholder = `Search for ${category}...`;
-        mealSearch.focus();
-        // Visual cue
-        mealSearch.style.borderColor = 'var(--lime)';
-        setTimeout(() => mealSearch.style.borderColor = '', 1500);
-    };
-
     function scaleMeal(meal, portion) {
         return {
             calories: Math.round(meal.calories * portion),
@@ -524,7 +666,7 @@ async function startNutritionApp(uid) {
     };
 
     window.toggleFavoriteMeal = (id) => {
-        const meal = mealDatabase.find((m) => m.id === id);
+        const meal = findMealById(id);
         if (!meal) return;
 
         if (isFavoriteMeal(id)) {
@@ -541,7 +683,16 @@ async function startNutritionApp(uid) {
     function renderMealDetails(meal) {
         detailMealId = meal.id;
         detailPortion = 1;
-        document.getElementById('detailMealImage').style.backgroundImage = `url('${meal.img}')`;
+        const detailImage = document.getElementById('detailMealImage');
+        if (meal.img) {
+            detailImage.style.backgroundImage = `url('${meal.img}')`;
+            detailImage.classList.remove('meal-detail-image-custom');
+            detailImage.innerHTML = '';
+        } else {
+            detailImage.style.backgroundImage = 'none';
+            detailImage.classList.add('meal-detail-image-custom');
+            detailImage.innerHTML = '<i class="bi bi-journal-text"></i>';
+        }
         document.getElementById('detailMealName').textContent = meal.name;
         document.getElementById('detailMealMeta').textContent = `${meal.category} • ${meal.cuisine}`;
         updateDetailNutrition(meal, detailPortion);
@@ -564,7 +715,7 @@ async function startNutritionApp(uid) {
     }
 
     function setActivePortionButton(portion) {
-        document.querySelectorAll('.portion-btn').forEach((btn) => {
+        document.querySelectorAll('#mealDetailModal .portion-btn').forEach((btn) => {
             const btnPortion = parseFloat(btn.dataset.portion);
             btn.classList.toggle('active', btnPortion === portion);
         });
@@ -575,7 +726,7 @@ async function startNutritionApp(uid) {
     };
 
     window.openMealDetails = (id) => {
-        const meal = mealDatabase.find((m) => m.id === id);
+        const meal = findMealById(id);
         if (!meal || !mealDetailModal) return;
         renderMealDetails(meal);
         mealDetailModal.style.display = 'flex';
@@ -635,18 +786,18 @@ async function startNutritionApp(uid) {
         if (e.target === customMealModal) closeCustomMeal();
     });
     document.getElementById('addMealFromDetailBtn')?.addEventListener('click', () => {
-        const meal = mealDatabase.find((m) => m.id === detailMealId);
+        const meal = findMealById(detailMealId);
         if (!meal) return;
         addMealToJournal(meal, detailPortion);
         closeMealDetail();
     });
-    document.querySelectorAll('.portion-btn').forEach((btn) => {
+    document.querySelectorAll('#mealDetailModal .portion-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
             const nextPortion = parseFloat(btn.dataset.portion);
             if (!Number.isFinite(nextPortion)) return;
             detailPortion = nextPortion;
             setActivePortionButton(detailPortion);
-            const meal = mealDatabase.find((m) => m.id === detailMealId);
+            const meal = findMealById(detailMealId);
             if (meal) updateDetailNutrition(meal, detailPortion);
         });
     });
@@ -715,6 +866,7 @@ async function startNutritionApp(uid) {
             instructions: ''
         };
 
+        saveMealTemplate(customMeal);
         addMealToJournal(customMeal, customPortion);
         closeCustomMeal();
     });
@@ -804,11 +956,18 @@ async function startNutritionApp(uid) {
     filterCuisine?.addEventListener('change', () => renderDiscovery(mealSearch.value));
     filterMaxCalories?.addEventListener('input', () => renderDiscovery(mealSearch.value));
 
+    document.getElementById('waterMinusBtn')?.addEventListener('click', () => changeWaterGlasses(-1));
+    document.getElementById('waterPlusBtn')?.addEventListener('click', () => changeWaterGlasses(1));
+    document.getElementById('openMetricsCalcBtn')?.addEventListener('click', () => {
+        calculatorModal.style.display = 'flex';
+    });
+
     try {
         applyNutritionState(await loadNutritionState(uid));
     } catch (error) {
         console.error('Unable to load nutrition state from Firestore:', error);
     }
 
+    startDayRolloverWatcher();
     refreshUI();
 }
