@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const comboCtx = document.getElementById('comboChart');
     let comboChartInst = null;
+    let calBalChartInst = null;
+    let weightChartInst = null;
     if (comboCtx) {
         comboChartInst = new Chart(comboCtx, {
             data: {
@@ -272,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const calBalCtx = document.getElementById('calorieBalanceChart');
     if (calBalCtx) {
-        new Chart(calBalCtx, {
+        calBalChartInst = new Chart(calBalCtx, {
             type: 'bar',
             data: {
                 labels: calBalLabels,
@@ -333,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const weightCtx = document.getElementById('weightChart');
     if (weightCtx) {
-        new Chart(weightCtx, {
+        weightChartInst = new Chart(weightCtx, {
             type: 'line',
             data: {
                 labels: weightLabels,
@@ -578,21 +580,139 @@ document.addEventListener('DOMContentLoaded', function () {
         if (ringPctEl) ringPctEl.textContent = progressPct + '%';
     }
 
+    /* ── REAL DATA STORE ──────────────────────────────────────── */
+    const _realData = {
+        logs: [], weekDates: [], nutrition: null,
+        calorieHistory: [], weightLogs: [],
+        profile: null, goals: {}, streak: 0
+    };
+
+    function updateCalorieBalanceChart(weekDates, calorieHistory, logs) {
+        if (!calBalChartInst) return;
+        const consumed = weekDates.map(date => {
+            const h = calorieHistory.find(h => h.date === date);
+            return h ? h.consumed : 0;
+        });
+        const burned = weekDates.map(date =>
+            logs.filter(l => l.date === date).reduce((s, l) => s + (parseInt(l.caloriesBurned) || 0), 0)
+        );
+        calBalChartInst.data.datasets[0].data = consumed;
+        calBalChartInst.data.datasets[1].data = burned;
+        const allVals = [...consumed, ...burned].filter(v => v > 0);
+        if (allVals.length > 0) {
+            calBalChartInst.options.scales.y.min = Math.max(0, Math.min(...allVals) - 300);
+        }
+        calBalChartInst.update();
+    }
+
+    function updateWeightChart(weightLogs, profile) {
+        if (!weightChartInst || weightLogs.length === 0) return;
+        const recent = weightLogs.slice(-15);
+        const labels = recent.map(l => {
+            const d = new Date(l.date);
+            return d.toLocaleDateString('en-MY', { month: 'short', day: 'numeric' });
+        });
+        const data = recent.map(l => l.weight);
+        const minW = Math.min(...data), maxW = Math.max(...data), range = maxW - minW;
+        weightChartInst.data.labels = labels;
+        weightChartInst.data.datasets[0].data = data;
+        weightChartInst.data.datasets[1].data = Array(labels.length).fill(parseFloat(minW.toFixed(1)));
+        weightChartInst.options.scales.y.min = Math.max(0, minW - Math.max(1, range * 0.5));
+        weightChartInst.options.scales.y.max = maxW + Math.max(1, range * 0.5);
+        weightChartInst.update();
+    }
+
+    function updateBodyMetrics(weightLogs, profile) {
+        const sorted = [...weightLogs].sort((a, b) => a.date.localeCompare(b.date));
+        const currentWeight = sorted.length > 0
+            ? sorted[sorted.length - 1].weight
+            : (profile && profile.weight) || 0;
+        const startWeight = sorted.length > 0 ? sorted[0].weight : currentWeight;
+        const lost = Math.max(0, parseFloat((startWeight - currentWeight).toFixed(1)));
+        const heightM = ((profile && profile.height) || 0) / 100;
+        const bmi = heightM > 0 ? (currentWeight / (heightM * heightM)).toFixed(1) : '—';
+
+        const metricsCard = document.querySelector('.body-metrics-card');
+        if (!metricsCard) return;
+        const vals = metricsCard.querySelectorAll('.metric-stat-value');
+        if (vals[0]) vals[0].textContent = (currentWeight || '—') + (currentWeight ? ' kg' : '');
+        if (vals[1]) vals[1].textContent = (startWeight || '—') + (startWeight ? ' kg' : '');
+        if (vals[2]) { vals[2].textContent = lost + ' kg'; vals[2].style.color = lost > 0 ? 'var(--lime)' : 'var(--text)'; }
+        if (vals[3]) vals[3].textContent = bmi;
+    }
+
+    function updateHeroStats(logs, nutrition, goals, todayStr) {
+        document.querySelectorAll('.hero-stat').forEach(stat => {
+            const label = stat.querySelector('.hstat-label');
+            const val = stat.querySelector('.hstat-value');
+            if (!label || !val) return;
+            if (label.textContent === 'Water intake') {
+                if (nutrition) {
+                    const glasses = (nutrition.waterDate === todayStr) ? (nutrition.waterGlasses || 0) : 0;
+                    val.textContent = glasses + (glasses === 1 ? ' glass' : ' glasses');
+                }
+            } else if (label.textContent === 'Goals met') {
+                let met = 0, total = 0;
+                const todayLogs = logs.filter(l => l.date === todayStr);
+                const todaySteps = todayLogs.reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+                if ((goals.dailySteps || 0) > 0) { total++; if (todaySteps >= goals.dailySteps) met++; }
+                if ((goals.dailyCalories || 0) > 0 && nutrition) {
+                    const consumed = (nutrition.trackedMeals || [])
+                        .filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr))
+                        .reduce((s, m) => s + (m.calories || 0), 0);
+                    total++; if (consumed > 0 && consumed <= goals.dailyCalories) met++;
+                }
+                if ((goals.dailyWater || 0) > 0 && nutrition) {
+                    const glasses = (nutrition.waterDate === todayStr) ? (nutrition.waterGlasses || 0) : 0;
+                    total++; if (glasses >= goals.dailyWater) met++;
+                }
+                if ((goals.weeklyWorkouts || 0) > 0) {
+                    const wkDates = getWeekDates();
+                    const wkWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && wkDates.includes(l.date)).length;
+                    total++; if (wkWorkouts >= goals.weeklyWorkouts) met++;
+                }
+                val.textContent = total > 0 ? `${met} / ${total}` : '— / —';
+            }
+        });
+    }
+
     async function updateDashboard(uid) {
         try {
-            const snap = await getDocs(collection(db, 'users', uid, 'activities'));
-            const logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const [actSnap, wSnap, chSnap, userDoc] = await Promise.all([
+                getDocs(collection(db, 'users', uid, 'activities')),
+                getDocs(collection(db, 'users', uid, 'weightLogs')),
+                getDocs(collection(db, 'users', uid, 'calorieHistory')),
+                getDoc(doc(db, 'users', uid))
+            ]);
+
+            const logs = actSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const weightLogs = wSnap.docs.map(d => d.data()).sort((a, b) => a.date.localeCompare(b.date));
+            const calorieHistory = chSnap.docs.map(d => d.data());
+            const userData = userDoc.exists() ? userDoc.data() : {};
+            const profile = userData.profile || null;
+            const goals = userData.goals || {};
+            const nutrition = userData.nutrition || null;
+            const weekDates = getWeekDates();
+            const todayStr = new Date().toISOString().split('T')[0];
 
             const workoutsCount = logs.filter(l => (l.category || l.type) === 'Workout').length;
             const allSteps = logs.map(l => parseInt(l.steps) || 0).filter(s => s > 0);
             const avgSteps = allSteps.length > 0 ? Math.round(allSteps.reduce((a, b) => a + b, 0) / allSteps.length) : 0;
             const streak = calcStreak(logs);
 
+            _realData.logs = logs;
+            _realData.weekDates = weekDates;
+            _realData.nutrition = nutrition;
+            _realData.calorieHistory = calorieHistory;
+            _realData.weightLogs = weightLogs;
+            _realData.profile = profile;
+            _realData.goals = goals;
+            _realData.streak = streak;
+
             setStat('summaryWorkouts', workoutsCount);
             setStat('summarySteps', avgSteps > 0 ? avgSteps.toLocaleString() : '0');
             setStat('summaryStreak', streak);
 
-            const todayStr = new Date().toISOString().split('T')[0];
             const todaySteps = logs.filter(l => l.date === todayStr).reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
             if (todaySteps > 0) setStat('stepsToday', todaySteps.toLocaleString());
 
@@ -603,14 +723,11 @@ document.addEventListener('DOMContentLoaded', function () {
             updateWeeklyCharts(logs);
             updateGoalRings(logs);
             setAIText(generateAIInsight(logs));
-
-            try {
-                const userDoc = await getDoc(doc(db, 'users', uid));
-                if (userDoc.exists()) {
-                    const nutrition = userDoc.data().nutrition;
-                    if (nutrition) updateCalorieUI(nutrition);
-                }
-            } catch (_) {}
+            if (nutrition) updateCalorieUI(nutrition);
+            updateCalorieBalanceChart(weekDates, calorieHistory, logs);
+            updateWeightChart(weightLogs, profile);
+            updateBodyMetrics(weightLogs, profile);
+            updateHeroStats(logs, nutrition, goals, todayStr);
         } catch (err) {
             console.error('Dashboard load error:', err);
         }
@@ -635,296 +752,382 @@ document.addEventListener('DOMContentLoaded', function () {
     overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-    /* ── MODAL CONTENT DEFINITIONS ───────────────────────────── */
-    const MODAL = {
-        workouts: {
-            title: 'Total Workouts',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">4</div><div class="modal-stat-label">This Week</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">18</div><div class="modal-stat-label">This Month</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">6</div><div class="modal-stat-label">Best Week</div></div>
+    /* ── MODAL BUILDERS (dynamic from real data) ─────────────── */
+    function buildWorkoutsModal() {
+        const { logs, weekDates } = _realData;
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const workouts = logs.filter(l => (l.category || l.type) === 'Workout');
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const weekWorkouts = workouts.filter(w => weekDates.includes(w.date)).length;
+        const monthWorkouts = workouts.filter(w => w.date >= monthStart).length;
+        const byWeek = {};
+        workouts.forEach(w => {
+            if (!w.date) return;
+            const d = new Date(w.date);
+            const wk = `${d.getFullYear()}-${Math.ceil((d - new Date(d.getFullYear(), 0, 1)) / 604800000)}`;
+            byWeek[wk] = (byWeek[wk] || 0) + 1;
+        });
+        const bestWeek = Object.values(byWeek).length ? Math.max(...Object.values(byWeek)) : 0;
+        const typeCounts = {};
+        workouts.forEach(w => { const t = w.category || w.type || 'Workout'; typeCounts[t] = (typeCounts[t] || 0) + 1; });
+        const total = workouts.length || 1;
+        const typeRows = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).slice(0, 3)
+            .map(([t, c]) => { const p = Math.round((c / total) * 100); return `<div class="modal-bar-item"><span class="modal-bar-label">${t}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${p}%;background:var(--lime)"></div></div><span class="modal-bar-value">${p}%</span></div>`; }).join('');
+        const recent = workouts.filter(w => w.date).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4)
+            .map(w => { const d = new Date(w.date); return `<div class="modal-list-item"><span class="modal-list-label">${dayNames[d.getDay()]} — ${w.category || w.type || 'Workout'}</span><span class="modal-list-value accent">${w.duration || '—'} min</span></div>`; }).join('');
+        return { title: 'Total Workouts', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${weekWorkouts}</div><div class="modal-stat-label">This Week</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${monthWorkouts}</div><div class="modal-stat-label">This Month</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${bestWeek}</div><div class="modal-stat-label">Best Week</div></div>
+            </div>
+            <div><div class="modal-section-title">Workout Types</div><div class="modal-bar-row">${typeRows || '<div style="color:var(--text-muted);font-size:0.8rem">No workouts logged yet</div>'}</div></div>
+            <div><div class="modal-section-title">Recent Sessions</div><div class="modal-list">${recent || '<div style="color:var(--text-muted);font-size:0.8rem">No sessions yet</div>'}</div></div>`
+        };
+    }
+
+    function buildStepsModal() {
+        const { logs, weekDates, goals } = _realData;
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todaySteps = logs.filter(l => l.date === todayStr).reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+        const weekSteps = weekDates.map(d => logs.filter(l => l.date === d).reduce((s, l) => s + (parseInt(l.steps) || 0), 0));
+        const daysWithSteps = weekSteps.filter(s => s > 0).length;
+        const weekAvg = daysWithSteps ? Math.round(weekSteps.reduce((a, b) => a + b, 0) / daysWithSteps) : 0;
+        const maxSteps = Math.max(...weekSteps, 1);
+        const stepGoal = goals.dailySteps || 10000;
+        const dayRows = weekDates.map((d, i) => {
+            const s = weekSteps[i]; const w = Math.min(Math.round((s / stepGoal) * 100), 100); const met = s >= stepGoal;
+            return `<div class="modal-bar-item"><span class="modal-bar-label">${dayNames[i]}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${w}%;background:${met ? 'var(--lime)' : 'rgba(180,212,0,0.4)'}"></div></div><span class="modal-bar-value">${s > 0 ? s.toLocaleString() : '—'}</span></div>`;
+        }).join('');
+        const goalMetDays = weekSteps.filter(s => s >= stepGoal).length;
+        return { title: 'Avg. Daily Steps', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${todaySteps > 0 ? todaySteps.toLocaleString() : '—'}</div><div class="modal-stat-label">Today</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${weekAvg > 0 ? weekAvg.toLocaleString() : '—'}</div><div class="modal-stat-label">Weekly Avg</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${maxSteps > 0 ? maxSteps.toLocaleString() : '—'}</div><div class="modal-stat-label">Best Day</div></div>
+            </div>
+            <div><div class="modal-section-title">This Week's Breakdown</div><div class="modal-bar-row">${dayRows}</div></div>
+            <div class="modal-list-item"><span class="modal-list-label">Goal (${stepGoal.toLocaleString()}/day) met on</span><span class="modal-list-value accent">${goalMetDays} / 7 days</span></div>`
+        };
+    }
+
+    function buildCaloriesModal() {
+        const { calorieHistory, weekDates, goals, nutrition } = _realData;
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayHist = calorieHistory.find(h => h.date === todayStr);
+        const todayConsumed = todayHist ? todayHist.consumed
+            : (nutrition ? (nutrition.trackedMeals || []).filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr)).reduce((s, m) => s + (m.calories || 0), 0) : 0);
+        const weekData = weekDates.map(d => { const h = calorieHistory.find(x => x.date === d); return h ? h.consumed : 0; });
+        const daysWithData = weekData.filter(v => v > 0).length;
+        const weekAvg = daysWithData ? Math.round(weekData.reduce((a, b) => a + b, 0) / daysWithData) : 0;
+        const target = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const dayRows = weekDates.map((d, i) => {
+            const v = weekData[i]; const w = Math.min(Math.round((v / target) * 100), 100);
+            return `<div class="modal-bar-item"><span class="modal-bar-label">${dayNames[i]}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${w}%;background:var(--lime)"></div></div><span class="modal-bar-value">${v > 0 ? v.toLocaleString() : '—'}</span></div>`;
+        }).join('');
+        return { title: 'Avg. Calories / Day', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${todayConsumed > 0 ? todayConsumed.toLocaleString() : '—'}</div><div class="modal-stat-label">Today</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${weekAvg > 0 ? weekAvg.toLocaleString() : '—'}</div><div class="modal-stat-label">Weekly Avg</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${target.toLocaleString()}</div><div class="modal-stat-label">Target</div></div>
+            </div>
+            <div><div class="modal-section-title">This Week</div><div class="modal-bar-row">${dayRows}</div></div>`
+        };
+    }
+
+    function buildStreakModal() {
+        const { streak, logs } = _realData;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const activeDaysMonth = new Set(logs.filter(l => l.date >= monthStart).map(l => l.date)).size;
+        const allDates = [...new Set(logs.filter(l => l.date).map(l => l.date))].sort((a, b) => b.localeCompare(a));
+        let pb = 0, cur = 0, prev = '';
+        allDates.forEach(d => {
+            if (!prev) { cur = 1; pb = 1; prev = d; return; }
+            const [y, m, dy] = prev.split('-').map(Number);
+            const dayBefore = new Date(Date.UTC(y, m - 1, dy));
+            dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+            if (d === dayBefore.toISOString().split('T')[0]) { cur++; pb = Math.max(pb, cur); } else { cur = 1; }
+            prev = d;
+        });
+        const milestones = [7, 10, 14, 30, 50, 100];
+        const icons = { 7: '🏅', 10: '⚡', 14: '🔥', 30: '🎯', 50: '🚀', 100: '👑' };
+        const milestoneRows = milestones.filter(m => m <= Math.max(streak, 7)).map(m => {
+            const reached = streak >= m;
+            return `<div class="modal-list-item"><span class="modal-list-label">${icons[m]} ${m}-Day Streak</span><span class="modal-list-value" style="color:${reached ? '#A78BFA' : 'var(--text-muted)'}">${reached ? 'Unlocked' : 'Locked'}</span></div>`;
+        }).join('');
+        const nextMilestone = milestones.find(m => m > streak);
+        return { title: 'Active Streak', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${streak}</div><div class="modal-stat-label">Current Streak</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:#A78BFA">${pb}</div><div class="modal-stat-label">Personal Best</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${activeDaysMonth}</div><div class="modal-stat-label">Active Days / Mo</div></div>
+            </div>
+            <div><div class="modal-section-title">Milestones</div><div class="modal-list">${milestoneRows}${nextMilestone ? `<div class="modal-list-item"><span class="modal-list-label">🎯 Next: ${nextMilestone}-Day</span><span class="modal-list-value" style="color:var(--text-muted)">${nextMilestone - streak} days to go</span></div>` : ''}</div></div>`
+        };
+    }
+
+    function buildProgressModal() {
+        const { logs, weekDates } = _realData;
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const activeDays = weekDates.filter(d => logs.some(l => l.date === d)).length;
+        const progressPct = Math.round((activeDays / 7) * 100);
+        const weekWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && weekDates.includes(l.date)).length;
+        const dayRows = weekDates.map(d => {
+            const dl = logs.filter(l => l.date === d);
+            const dn = dayNames[new Date(d).getDay()];
+            const steps = dl.reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+            const dur = dl.reduce((s, l) => s + (parseInt(l.duration) || 0), 0);
+            const active = dl.length > 0;
+            const type = active ? (dl[0].category || dl[0].type || 'Activity') : 'Rest day';
+            return `<div class="modal-list-item">
+                <div><div style="font-size:0.78rem;font-weight:600;color:${active ? 'var(--text)' : 'var(--text-muted)'}">${dn} — ${type}${dur ? ` · ${dur} min` : ''}</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${steps > 0 ? steps.toLocaleString() + ' steps' : '—'}</div></div>
+                <span>${active ? '✅' : '—'}</span>
+            </div>`;
+        }).join('');
+        return { title: 'Weekly Progress', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${progressPct}%</div><div class="modal-stat-label">Complete</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${activeDays}</div><div class="modal-stat-label">Active Days</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${weekWorkouts}</div><div class="modal-stat-label">Workouts</div></div>
+            </div>
+            <div><div class="modal-section-title">Day by Day Activity</div><div class="modal-list">${dayRows}</div></div>`
+        };
+    }
+
+    function buildDailyCaloriesModal() {
+        const { nutrition, goals } = _realData;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayMeals = (nutrition && nutrition.trackedMeals || []).filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr));
+        const consumed = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
+        const target = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const remaining = Math.max(0, target - consumed);
+        const protein = todayMeals.reduce((s, m) => s + (m.protein || 0), 0);
+        const carbs = todayMeals.reduce((s, m) => s + (m.carbs || 0), 0);
+        const fat = todayMeals.reduce((s, m) => s + (m.fat || 0), 0);
+        const carbGoal = Math.round(target * 0.50 / 4);
+        const fatGoal = Math.round(target * 0.25 / 9);
+        const proteinGoal = Math.round(target * 0.25 / 4);
+        const catColors = { Breakfast: 'var(--lime)', Lunch: '#38BDF8', Dinner: '#F59E0B', Snack: '#F87171' };
+        const catRows = ['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(cat => {
+            const cals = todayMeals.filter(m => m.category === cat).reduce((s, m) => s + (m.calories || 0), 0);
+            const pct = cals > 0 ? Math.min(Math.round((cals / target) * 100), 100) : 0;
+            return `<div class="modal-bar-item"><span class="modal-bar-label">${cat}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${pct}%;background:${catColors[cat]}"></div></div><span class="modal-bar-value">${cals > 0 ? cals + ' kcal' : '—'}</span></div>`;
+        }).join('');
+        return { title: 'Daily Calories Detail', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${consumed.toLocaleString()}</div><div class="modal-stat-label">Consumed</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${target.toLocaleString()}</div><div class="modal-stat-label">Target</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:var(--lime)">${remaining.toLocaleString()}</div><div class="modal-stat-label">Remaining</div></div>
+            </div>
+            <div><div class="modal-section-title">Meal Breakdown</div><div class="modal-bar-row">${catRows}</div></div>
+            <div class="modal-list">
+                <div class="modal-list-item"><span class="modal-list-label">🟢 Carbs</span><span class="modal-list-value accent">${carbs}g / ${carbGoal}g</span></div>
+                <div class="modal-list-item"><span class="modal-list-label">🔴 Fat</span><span class="modal-list-value" style="color:#F87171">${fat}g / ${fatGoal}g</span></div>
+                <div class="modal-list-item"><span class="modal-list-label">🔵 Protein</span><span class="modal-list-value" style="color:#38BDF8">${protein}g / ${proteinGoal}g</span></div>
+            </div>`
+        };
+    }
+
+    function buildComboChartModal() {
+        const { logs, weekDates } = _realData;
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        let totalMin = 0, totalSteps = 0, peakDay = '—', peakSteps = 0;
+        const rows = weekDates.map((d, i) => {
+            const dur = logs.filter(l => l.date === d).reduce((s, l) => s + (parseInt(l.duration) || 0), 0);
+            const steps = logs.filter(l => l.date === d).reduce((s, l) => s + (parseInt(l.steps) || 0), 0);
+            totalMin += dur; totalSteps += steps;
+            if (steps > peakSteps) { peakSteps = steps; peakDay = dayNames[i]; }
+            return `<div class="modal-list-item">
+                <span class="modal-list-label" style="color:var(--text);font-weight:700">${dayNames[i]}</span>
+                <div style="display:flex;gap:16px;font-size:0.78rem">
+                    <span style="color:rgba(180,212,0,0.7)">⏱ ${dur > 0 ? dur + ' min' : '—'}</span>
+                    <span class="modal-list-value accent">👟 ${steps > 0 ? steps.toLocaleString() : '—'}</span>
                 </div>
-                <div>
-                    <div class="modal-section-title">Workout Types</div>
-                    <div class="modal-bar-row">
-                        <div class="modal-bar-item"><span class="modal-bar-label">Running</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:40%;background:var(--lime)"></div></div><span class="modal-bar-value">40%</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label">Cycling</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:30%;background:#38BDF8"></div></div><span class="modal-bar-value">30%</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label">Strength</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:30%;background:#F59E0B"></div></div><span class="modal-bar-value">30%</span></div>
-                    </div>
+            </div>`;
+        }).join('');
+        return { title: 'Activity Duration & Steps', body: `
+            <div class="modal-section-title">This Week's Breakdown</div>
+            <div class="modal-list">${rows}</div>
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${totalMin || '—'}</div><div class="modal-stat-label">Total Min</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${totalSteps > 0 ? (totalSteps / 1000).toFixed(1) + 'k' : '—'}</div><div class="modal-stat-label">Total Steps</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${peakDay}</div><div class="modal-stat-label">Peak Day</div></div>
+            </div>`
+        };
+    }
+
+    function buildCalorieBalanceModal() {
+        const { weekDates, calorieHistory, logs } = _realData;
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        let totalConsumed = 0, totalBurned = 0;
+        const rows = weekDates.map((d, i) => {
+            const hist = calorieHistory.find(h => h.date === d);
+            const c = hist ? hist.consumed : 0;
+            const b = logs.filter(l => l.date === d).reduce((s, l) => s + (parseInt(l.caloriesBurned) || 0), 0);
+            totalConsumed += c; totalBurned += b;
+            const net = b - c;
+            return `<div class="modal-list-item">
+                <span style="font-weight:700;color:var(--text);width:36px">${dayNames[i]}</span>
+                <div style="display:flex;gap:10px;font-size:0.75rem;flex:1;justify-content:flex-end;flex-wrap:wrap">
+                    ${c > 0 ? `<span style="color:#F87171">↑ ${c.toLocaleString()}</span>` : '<span style="color:var(--text-muted)">— consumed</span>'}
+                    ${b > 0 ? `<span style="color:var(--lime)">🔥 ${b.toLocaleString()}</span>` : '<span style="color:var(--text-muted)">— burned</span>'}
+                    ${(c > 0 || b > 0) ? `<span style="font-weight:700;color:${net >= 0 ? 'var(--lime)' : '#F87171'}">Net ${net >= 0 ? '+' : ''}${net}</span>` : ''}
                 </div>
-                <div>
-                    <div class="modal-section-title">Recent Sessions</div>
-                    <div class="modal-list">
-                        <div class="modal-list-item"><span class="modal-list-label">Sat — Running</span><span class="modal-list-value accent">90 min</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Fri — Strength</span><span class="modal-list-value accent">45 min</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Wed — Cycling</span><span class="modal-list-value accent">60 min</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Mon — Running</span><span class="modal-list-value accent">45 min</span></div>
-                    </div>
-                </div>`
-        },
-        steps: {
-            title: 'Avg. Daily Steps',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">8,240</div><div class="modal-stat-label">Today</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">8,847</div><div class="modal-stat-label">Weekly Avg</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">12k</div><div class="modal-stat-label">Best Day</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">This Week's Breakdown</div>
-                    <div class="modal-bar-row">
-                        ${[['Mon','8,000',80],['Tue','7,500',75],['Wed','10,200',100],['Thu','6,000',60],['Fri','8,800',88],['Sat','12,000',100],['Sun','9,500',95]]
-                            .map(([d,v,w]) => `<div class="modal-bar-item"><span class="modal-bar-label">${d}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${w}%;background:${w>=100?'var(--lime)':'rgba(180,212,0,0.4)'}"></div></div><span class="modal-bar-value">${v}</span></div>`).join('')}
-                    </div>
-                </div>
-                <div class="modal-list-item"><span class="modal-list-label">Goal (10,000/day) met on</span><span class="modal-list-value accent">4 / 7 days</span></div>`
-        },
-        calories: {
-            title: 'Avg. Calories / Day',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">2,104</div><div class="modal-stat-label">Today</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">2,022</div><div class="modal-stat-label">Weekly Avg</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">2,200</div><div class="modal-stat-label">Target</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Meal Breakdown (Today)</div>
-                    <div class="modal-bar-row">
-                        <div class="modal-bar-item"><span class="modal-bar-label">Breakfast</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:28%;background:var(--lime)"></div></div><span class="modal-bar-value">590 kcal</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label">Lunch</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:38%;background:#38BDF8"></div></div><span class="modal-bar-value">800 kcal</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label">Dinner</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:29%;background:#F59E0B"></div></div><span class="modal-bar-value">614 kcal</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label">Snacks</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:5%;background:#F87171"></div></div><span class="modal-bar-value">100 kcal</span></div>
-                    </div>
-                </div>
-                <div class="modal-list-item"><span class="modal-list-label">Remaining today</span><span class="modal-list-value accent">96 kcal</span></div>`
-        },
-        streak: {
-            title: 'Active Streak',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">14</div><div class="modal-stat-label">Current Streak</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#A78BFA">14</div><div class="modal-stat-label">Personal Best</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">22</div><div class="modal-stat-label">Active Days / Mo</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Milestones Unlocked</div>
-                    <div class="modal-list">
-                        <div class="modal-list-item"><span class="modal-list-label">🔥 14-Day Streak</span><span class="modal-list-value accent">Personal Best!</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">⚡ 10-Day Streak</span><span class="modal-list-value" style="color:#A78BFA">Unlocked</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">🏅 7-Day Streak</span><span class="modal-list-value" style="color:#A78BFA">Unlocked</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">🎯 30-Day Streak</span><span class="modal-list-value" style="color:var(--text-muted)">16 days to go</span></div>
-                    </div>
-                </div>`
-        },
-        progress: {
-            title: 'Weekly Progress',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">74%</div><div class="modal-stat-label">Complete</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">6</div><div class="modal-stat-label">Active Days</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">5/7</div><div class="modal-stat-label">Goals Met</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Day by Day Activity</div>
-                    <div class="modal-list">
-                        ${[['Sun','Rest day','—',false],['Mon','Running · 45 min','8,000 steps',true],['Tue','Cycling · 30 min','7,500 steps',true],['Wed','Strength · 60 min','10,200 steps',true],['Thu','Running · 35 min','6,000 steps',true],['Fri','Strength · 45 min','8,800 steps',true],['Sat','Running · 90 min','12,000 steps',true]]
-                            .map(([d,a,s,active]) => `
-                            <div class="modal-list-item">
-                                <div><div style="font-size:0.78rem;font-weight:600;color:${active?'var(--text)':'var(--text-muted)'}">${d} — ${a}</div><div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${s}</div></div>
-                                <span>${active?'✅':'—'}</span>
-                            </div>`).join('')}
-                    </div>
-                </div>`
-        },
-        dailyCalories: {
-            title: 'Daily Calories Detail',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">1,250</div><div class="modal-stat-label">Consumed</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">1,920</div><div class="modal-stat-label">Target</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:var(--lime)">670</div><div class="modal-stat-label">Remaining</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Macronutrients</div>
-                    <div class="modal-list">
-                        <div class="modal-list-item"><span class="modal-list-label">🟢 Carbs</span><span class="modal-list-value accent">109g / 198g &nbsp;(55%)</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">🔴 Fat</span><span class="modal-list-value" style="color:#F87171">13g / 52g &nbsp;(26%)</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">🔵 Protein</span><span class="modal-list-value" style="color:#38BDF8">34g / 122g &nbsp;(28%)</span></div>
-                    </div>
-                </div>
-                <div class="modal-list-item" style="background:rgba(180,212,0,0.05);border-color:rgba(180,212,0,0.18)"><span class="modal-list-label" style="color:var(--text-muted)">💡 Increase protein intake to support muscle recovery.</span></div>`
-        },
-        comboChart: {
-            title: 'Activity Duration & Steps',
-            body: `
-                <div class="modal-section-title">This Week's Breakdown</div>
-                <div class="modal-list">
-                    ${[['Mon',45,'8,000'],['Tue',30,'7,500'],['Wed',60,'10,200'],['Thu',35,'6,000'],['Fri',45,'8,800'],['Sat',90,'12,000'],['Sun',20,'9,500']]
-                        .map(([d,dur,steps]) => `
-                        <div class="modal-list-item">
-                            <span class="modal-list-label" style="color:var(--text);font-weight:700">${d}</span>
-                            <div style="display:flex;gap:16px;font-size:0.78rem">
-                                <span style="color:rgba(180,212,0,0.7)">⏱ ${dur} min</span>
-                                <span class="modal-list-value accent">👟 ${steps}</span>
-                            </div>
-                        </div>`).join('')}
-                </div>
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">325</div><div class="modal-stat-label">Total Min</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">62k</div><div class="modal-stat-label">Total Steps</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">Sat</div><div class="modal-stat-label">Peak Day</div></div>
-                </div>`
-        },
-        calorieBalance: {
-            title: 'Calorie Balance',
-            body: `
-                <div class="modal-section-title">Consumed vs Burned This Week</div>
-                <div class="modal-list">
-                    ${[['Mon',1850,2100],['Tue',2100,1950],['Wed',1950,2300],['Thu',2200,1800],['Fri',1800,2200],['Sat',2400,1950],['Sun',2050,1750]]
-                        .map(([d,c,b]) => { const net = b - c; return `
-                        <div class="modal-list-item">
-                            <span style="font-weight:700;color:var(--text);width:36px">${d}</span>
-                            <div style="display:flex;gap:10px;font-size:0.75rem;flex:1;justify-content:flex-end;flex-wrap:wrap">
-                                <span style="color:#F87171">↑ ${c.toLocaleString()}</span>
-                                <span style="color:var(--lime)">🔥 ${b.toLocaleString()}</span>
-                                <span style="font-weight:700;color:${net>=0?'var(--lime)':'#F87171'}">Net ${net>=0?'+':''}${net}</span>
-                            </div>
-                        </div>`;}).join('')}
-                </div>
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#F87171">14.4k</div><div class="modal-stat-label">Total Consumed</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">14.1k</div><div class="modal-stat-label">Total Burned</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#F87171">-300</div><div class="modal-stat-label">Net (Week)</div></div>
-                </div>`
-        },
-        goalWorkouts: {
-            title: 'Workouts Goal',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">4</div><div class="modal-stat-label">Completed</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">5</div><div class="modal-stat-label">Goal</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">80%</div><div class="modal-stat-label">Progress</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Sessions This Week</div>
-                    <div class="modal-list">
-                        <div class="modal-list-item"><span class="modal-list-label">Mon — Running</span><span class="modal-list-value accent">45 min ✅</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Wed — Strength</span><span class="modal-list-value accent">60 min ✅</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Fri — Strength</span><span class="modal-list-value accent">45 min ✅</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Sat — Running</span><span class="modal-list-value accent">90 min ✅</span></div>
-                        <div class="modal-list-item" style="opacity:0.5"><span class="modal-list-label">1 session remaining</span><span class="modal-list-value" style="color:var(--text-muted)">pending</span></div>
-                    </div>
-                </div>`
-        },
-        goalSteps: {
-            title: 'Step Goal',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">4</div><div class="modal-stat-label">Days Met</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#38BDF8">10k</div><div class="modal-stat-label">Daily Goal</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#38BDF8">58%</div><div class="modal-stat-label">Progress</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Daily Performance</div>
-                    <div class="modal-list">
-                        ${[['Mon','8,000','❌'],['Tue','7,500','❌'],['Wed','10,200','✅'],['Thu','6,000','❌'],['Fri','8,800','❌'],['Sat','12,000','✅'],['Sun','9,500','❌']]
-                            .map(([d,s,m]) => `<div class="modal-list-item"><span class="modal-list-label" style="color:var(--text)">${d}</span><span class="modal-list-value ${m==='✅'?'accent':''}">${s} steps ${m}</span></div>`).join('')}
-                    </div>
-                </div>`
-        },
-        goalCalories: {
-            title: 'Calorie Target',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">6</div><div class="modal-stat-label">Days Met</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#F59E0B">2,200</div><div class="modal-stat-label">Daily Target</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:#F59E0B">85%</div><div class="modal-stat-label">Progress</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Daily Calorie Log</div>
-                    <div class="modal-list">
-                        ${[['Mon',1850,'✅'],['Tue',2100,'✅'],['Wed',1950,'✅'],['Thu',2200,'✅'],['Fri',1800,'✅'],['Sat',2400,'❌'],['Sun',2050,'✅']]
-                            .map(([d,c,m]) => `<div class="modal-list-item"><span class="modal-list-label" style="color:var(--text)">${d}</span><span class="modal-list-value ${m==='✅'?'accent':''}">${c.toLocaleString()} kcal ${m}</span></div>`).join('')}
-                    </div>
-                </div>`
-        },
-        bodyMetrics: {
-            title: 'Body Metrics',
-            body: `
-                <div class="modal-stat-row">
-                    <div class="modal-stat"><div class="modal-stat-val">72.1</div><div class="modal-stat-label">Current (kg)</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val" style="color:var(--lime)">2.1</div><div class="modal-stat-label">Lost (kg)</div></div>
-                    <div class="modal-stat"><div class="modal-stat-val">22.4</div><div class="modal-stat-label">BMI</div></div>
-                </div>
-                <div>
-                    <div class="modal-section-title">BMI Range</div>
-                    <div class="modal-bar-row">
-                        <div class="modal-bar-item"><span class="modal-bar-label" style="width:90px">Underweight</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:20%;background:#38BDF8"></div></div><span class="modal-bar-value">< 18.5</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label" style="color:var(--lime);width:90px">Normal ✓</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:74%;background:var(--lime)"></div></div><span class="modal-bar-value" style="color:var(--lime)">22.4</span></div>
-                        <div class="modal-bar-item"><span class="modal-bar-label" style="width:90px">Overweight</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:0%"></div></div><span class="modal-bar-value">25–30</span></div>
-                    </div>
-                </div>
-                <div>
-                    <div class="modal-section-title">Progress Tracker</div>
-                    <div class="modal-list">
-                        <div class="modal-list-item"><span class="modal-list-label">Start weight</span><span class="modal-list-value">74.2 kg</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Current weight</span><span class="modal-list-value accent">72.1 kg</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Goal weight</span><span class="modal-list-value">72.0 kg</span></div>
-                        <div class="modal-list-item"><span class="modal-list-label">Remaining</span><span class="modal-list-value" style="color:#F59E0B">Only 0.1 kg to go! 🎯</span></div>
-                    </div>
-                </div>`
+            </div>`;
+        }).join('');
+        const weekNet = totalBurned - totalConsumed;
+        return { title: 'Calorie Balance', body: `
+            <div class="modal-section-title">Consumed vs Burned This Week</div>
+            <div class="modal-list">${rows}</div>
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val" style="color:#F87171">${totalConsumed > 0 ? (totalConsumed / 1000).toFixed(1) + 'k' : '—'}</div><div class="modal-stat-label">Total Consumed</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${totalBurned > 0 ? (totalBurned / 1000).toFixed(1) + 'k' : '—'}</div><div class="modal-stat-label">Total Burned</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:${weekNet >= 0 ? 'var(--lime)' : '#F87171'}">${(totalConsumed > 0 || totalBurned > 0) ? (weekNet >= 0 ? '+' : '') + weekNet : '—'}</div><div class="modal-stat-label">Net (Week)</div></div>
+            </div>`
+        };
+    }
+
+    function buildGoalWorkoutsModal() {
+        const { logs, weekDates, goals } = _realData;
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const workoutGoal = (goals && goals.weeklyWorkouts) || 5;
+        const weekWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && weekDates.includes(l.date));
+        const completed = weekWorkouts.length;
+        const pct = Math.min(Math.round((completed / workoutGoal) * 100), 100);
+        const sessions = weekWorkouts.sort((a, b) => a.date.localeCompare(b.date)).map(w => {
+            const d = new Date(w.date);
+            return `<div class="modal-list-item"><span class="modal-list-label">${dayNames[d.getDay()]} — ${w.category || w.type || 'Workout'}</span><span class="modal-list-value accent">${w.duration || '—'} min ✅</span></div>`;
+        }).join('');
+        const remaining = Math.max(0, workoutGoal - completed);
+        return { title: 'Workouts Goal', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${completed}</div><div class="modal-stat-label">Completed</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${workoutGoal}</div><div class="modal-stat-label">Goal</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${pct}%</div><div class="modal-stat-label">Progress</div></div>
+            </div>
+            <div><div class="modal-section-title">Sessions This Week</div><div class="modal-list">${sessions || '<div style="color:var(--text-muted);font-size:0.8rem;padding:8px 0">No workouts logged yet</div>'}${remaining > 0 ? `<div class="modal-list-item" style="opacity:0.5"><span class="modal-list-label">${remaining} session${remaining > 1 ? 's' : ''} remaining</span><span class="modal-list-value" style="color:var(--text-muted)">pending</span></div>` : ''}</div></div>`
+        };
+    }
+
+    function buildGoalStepsModal() {
+        const { logs, weekDates, goals } = _realData;
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const stepGoal = (goals && goals.dailySteps) || 10000;
+        const weekSteps = weekDates.map(d => logs.filter(l => l.date === d).reduce((s, l) => s + (parseInt(l.steps) || 0), 0));
+        const metDays = weekSteps.filter(s => s >= stepGoal).length;
+        const pct = Math.round((metDays / 7) * 100);
+        const rows = weekDates.map((d, i) => {
+            const s = weekSteps[i]; const met = s >= stepGoal;
+            return `<div class="modal-list-item"><span class="modal-list-label" style="color:var(--text)">${dayNames[i]}</span><span class="modal-list-value ${met ? 'accent' : ''}">${s > 0 ? s.toLocaleString() + ' steps' : '—'} ${s > 0 ? (met ? '✅' : '❌') : ''}</span></div>`;
+        }).join('');
+        return { title: 'Step Goal', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${metDays}</div><div class="modal-stat-label">Days Met</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:#38BDF8">${(stepGoal / 1000).toFixed(0)}k</div><div class="modal-stat-label">Daily Goal</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:#38BDF8">${pct}%</div><div class="modal-stat-label">Progress</div></div>
+            </div>
+            <div><div class="modal-section-title">Daily Performance</div><div class="modal-list">${rows}</div></div>`
+        };
+    }
+
+    function buildGoalCaloriesModal() {
+        const { calorieHistory, weekDates, goals, nutrition } = _realData;
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const calGoal = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const weekData = weekDates.map(d => { const h = calorieHistory.find(x => x.date === d); return h ? h.consumed : 0; });
+        const metDays = weekData.filter(c => c > 0 && c <= calGoal).length;
+        const rows = weekDates.map((d, i) => {
+            const c = weekData[i]; const met = c > 0 && c <= calGoal;
+            return `<div class="modal-list-item"><span class="modal-list-label" style="color:var(--text)">${dayNames[i]}</span><span class="modal-list-value ${met ? 'accent' : ''}">${c > 0 ? c.toLocaleString() + ' kcal' : '—'} ${c > 0 ? (met ? '✅' : '❌') : ''}</span></div>`;
+        }).join('');
+        return { title: 'Calorie Target', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${metDays}</div><div class="modal-stat-label">Days Met</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:#F59E0B">${calGoal.toLocaleString()}</div><div class="modal-stat-label">Daily Target</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:#F59E0B">${Math.round((metDays / 7) * 100)}%</div><div class="modal-stat-label">Progress</div></div>
+            </div>
+            <div><div class="modal-section-title">Daily Calorie Log</div><div class="modal-list">${rows}</div></div>`
+        };
+    }
+
+    function buildBodyMetricsModal() {
+        const { weightLogs, profile } = _realData;
+        const sorted = [...weightLogs].sort((a, b) => a.date.localeCompare(b.date));
+        const currentWeight = sorted.length > 0 ? sorted[sorted.length - 1].weight : (profile && profile.weight) || 0;
+        const startWeight = sorted.length > 0 ? sorted[0].weight : currentWeight;
+        const lost = Math.max(0, parseFloat((startWeight - currentWeight).toFixed(1)));
+        const heightM = ((profile && profile.height) || 0) / 100;
+        const bmi = heightM > 0 ? parseFloat((currentWeight / (heightM * heightM)).toFixed(1)) : null;
+        let bmiLabel = '—', bmiColor = 'var(--text)';
+        if (bmi) {
+            if (bmi < 18.5) { bmiLabel = 'Underweight'; bmiColor = '#38BDF8'; }
+            else if (bmi < 25) { bmiLabel = 'Normal ✓'; bmiColor = 'var(--lime)'; }
+            else if (bmi < 30) { bmiLabel = 'Overweight'; bmiColor = '#F59E0B'; }
+            else { bmiLabel = 'Obese'; bmiColor = '#F87171'; }
         }
-    };
+        const recentRows = sorted.slice(-5).reverse().map(l => `<div class="modal-list-item"><span class="modal-list-label">${l.date}</span><span class="modal-list-value accent">${l.weight} kg</span></div>`).join('');
+        return { title: 'Body Metrics', body: `
+            <div class="modal-stat-row">
+                <div class="modal-stat"><div class="modal-stat-val">${currentWeight || '—'}</div><div class="modal-stat-label">Current (kg)</div></div>
+                <div class="modal-stat"><div class="modal-stat-val" style="color:var(--lime)">${lost}</div><div class="modal-stat-label">Lost (kg)</div></div>
+                <div class="modal-stat"><div class="modal-stat-val">${bmi || '—'}</div><div class="modal-stat-label">BMI</div></div>
+            </div>
+            ${bmi ? `<div><div class="modal-section-title">BMI Status</div><div class="modal-list-item"><span class="modal-list-label" style="color:${bmiColor}">${bmiLabel}</span><span class="modal-list-value">${bmi}</span></div></div>` : ''}
+            <div><div class="modal-section-title">Recent Weigh-ins</div><div class="modal-list">${recentRows || '<div style="color:var(--text-muted);font-size:0.8rem;padding:8px 0">No weight logs yet. Log your weight in Profile.</div>'}</div></div>
+            <div class="modal-list">
+                <div class="modal-list-item"><span class="modal-list-label">Start weight</span><span class="modal-list-value">${startWeight || '—'} kg</span></div>
+                <div class="modal-list-item"><span class="modal-list-label">Current weight</span><span class="modal-list-value accent">${currentWeight || '—'} kg</span></div>
+                <div class="modal-list-item"><span class="modal-list-label">Height</span><span class="modal-list-value">${profile && profile.height ? profile.height + ' cm' : '—'}</span></div>
+            </div>`
+        };
+    }
 
     /* ── ATTACH CLICK HANDLERS ────────────────────────────────── */
-
-    // Stat cards
     const statKeys = ['workouts', 'steps', 'calories', 'streak'];
+    const statBuilders = [buildWorkoutsModal, buildStepsModal, buildCaloriesModal, buildStreakModal];
     document.querySelectorAll('.summary-card').forEach((card, i) => {
         card.classList.add('clickable');
-        card.addEventListener('click', () => openModal(MODAL[statKeys[i]].title, MODAL[statKeys[i]].body));
+        card.addEventListener('click', () => { const m = statBuilders[i](); openModal(m.title, m.body); });
     });
 
-    // Weekly Progress ring card
     const progressCard = document.querySelector('.progress-hero-card');
     if (progressCard) {
         progressCard.classList.add('clickable');
-        progressCard.addEventListener('click', () => openModal(MODAL.progress.title, MODAL.progress.body));
+        progressCard.addEventListener('click', () => { const m = buildProgressModal(); openModal(m.title, m.body); });
     }
 
-    // Daily Calories card
     const calorieHeroCard = document.querySelector('.calorie-card');
     if (calorieHeroCard) {
         calorieHeroCard.classList.add('clickable');
-        calorieHeroCard.addEventListener('click', () => openModal(MODAL.dailyCalories.title, MODAL.dailyCalories.body));
+        calorieHeroCard.addEventListener('click', () => { const m = buildDailyCaloriesModal(); openModal(m.title, m.body); });
     }
 
-    // Inject "View Details" footer bar into combo chart card and calorie balance card
-    function addDetailsBar(canvasId, modalKey) {
+    function addDetailsBar(canvasId, builderFn) {
         const card = document.getElementById(canvasId)?.closest('.chart-card');
         if (!card) return;
         const bar = document.createElement('div');
         bar.className = 'chart-details-bar';
         bar.innerHTML = 'View Details <i class="bi bi-arrow-up-right"></i>';
-        bar.addEventListener('click', () => openModal(MODAL[modalKey].title, MODAL[modalKey].body));
+        bar.addEventListener('click', () => { const m = builderFn(); openModal(m.title, m.body); });
         card.appendChild(bar);
     }
-    addDetailsBar('comboChart',          'comboChart');
-    addDetailsBar('calorieBalanceChart', 'calorieBalance');
+    addDetailsBar('comboChart', buildComboChartModal);
+    addDetailsBar('calorieBalanceChart', buildCalorieBalanceModal);
 
-    // Goal ring items
-    const goalKeys = ['goalWorkouts', 'goalSteps', 'goalCalories'];
+    const goalBuilders = [buildGoalWorkoutsModal, buildGoalStepsModal, buildGoalCaloriesModal];
     document.querySelectorAll('.goal-ring-item').forEach((item, i) => {
         item.classList.add('clickable');
-        item.addEventListener('click', () => openModal(MODAL[goalKeys[i]].title, MODAL[goalKeys[i]].body));
+        item.addEventListener('click', () => { const m = goalBuilders[i](); openModal(m.title, m.body); });
     });
 
-    // Body Metrics card
     const bodyCard = document.querySelector('.body-metrics-card');
     if (bodyCard) {
         bodyCard.classList.add('clickable');
-        bodyCard.addEventListener('click', () => openModal(MODAL.bodyMetrics.title, MODAL.bodyMetrics.body));
+        bodyCard.addEventListener('click', () => { const m = buildBodyMetricsModal(); openModal(m.title, m.body); });
     }
 
     /* ── INIT ─────────────────────────────────────────────────── */
