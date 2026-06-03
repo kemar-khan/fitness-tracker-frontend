@@ -676,6 +676,89 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function updateCardTrends(logs, calorieHistory, goals, nutrition) {
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+        const todayStr = now.toISOString().split('T')[0];
+        const trendEls = document.querySelectorAll('.summary-card .card-trend');
+        if (trendEls.length < 4) return;
+
+        // 1. Total Workouts vs last month
+        const thisMonthWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && l.date >= thisMonthStart).length;
+        const lastMonthWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && l.date >= lastMonthStart && l.date <= lastMonthEnd).length;
+        const workoutDiff = thisMonthWorkouts - lastMonthWorkouts;
+        const wIcon = workoutDiff >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
+        const wCls  = workoutDiff > 0 ? 'up' : workoutDiff < 0 ? 'down' : 'neutral';
+        const wText = workoutDiff === 0 ? 'Same as last month' : `${workoutDiff > 0 ? '+' : ''}${workoutDiff} vs last month`;
+        trendEls[0].className = `card-trend ${wCls}`;
+        trendEls[0].innerHTML = `<i class="bi ${wIcon}"></i> ${wText}`;
+
+        // 2. Avg. Daily Steps vs last month
+        function avgStepsForRange(start, end) {
+            const uniqueDays = [...new Set(logs.filter(l => l.date >= start && l.date <= end && (parseInt(l.steps) || 0) > 0).map(l => l.date))];
+            if (!uniqueDays.length) return 0;
+            return Math.round(logs.filter(l => l.date >= start && l.date <= end).reduce((s, l) => s + (parseInt(l.steps) || 0), 0) / uniqueDays.length);
+        }
+        const thisAvgSteps = avgStepsForRange(thisMonthStart, todayStr);
+        const lastAvgSteps = avgStepsForRange(lastMonthStart, lastMonthEnd);
+        if (lastAvgSteps === 0) {
+            trendEls[1].className = 'card-trend neutral';
+            trendEls[1].innerHTML = '<i class="bi bi-dash-lg"></i> No data last month';
+        } else {
+            const pct = Math.round(((thisAvgSteps - lastAvgSteps) / lastAvgSteps) * 100);
+            trendEls[1].className = `card-trend ${pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral'}`;
+            trendEls[1].innerHTML = `<i class="bi ${pct >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right'}"></i> ${pct >= 0 ? '+' : ''}${pct}% vs last month`;
+        }
+
+        // 3. Avg. Calories vs target
+        const calTarget = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const thisMonthCalDays = calorieHistory.filter(h => h.date >= thisMonthStart && h.consumed > 0);
+        if (!thisMonthCalDays.length) {
+            trendEls[2].className = 'card-trend neutral';
+            trendEls[2].innerHTML = '<i class="bi bi-dash-lg"></i> No data yet';
+        } else {
+            const avgCal = Math.round(thisMonthCalDays.reduce((s, h) => s + h.consumed, 0) / thisMonthCalDays.length);
+            const diff = avgCal - calTarget;
+            const pct = Math.round(Math.abs(diff / calTarget) * 100);
+            if (Math.abs(diff) <= calTarget * 0.05) {
+                trendEls[2].className = 'card-trend neutral';
+                trendEls[2].innerHTML = '<i class="bi bi-dash-lg"></i> On target';
+            } else if (diff < 0) {
+                trendEls[2].className = 'card-trend up';
+                trendEls[2].innerHTML = `<i class="bi bi-arrow-down-right"></i> ${pct}% under target`;
+            } else {
+                trendEls[2].className = 'card-trend down';
+                trendEls[2].innerHTML = `<i class="bi bi-arrow-up-right"></i> ${pct}% over target`;
+            }
+        }
+
+        // 4. Active Streak vs personal best
+        const allDates = [...new Set(logs.filter(l => l.date).map(l => l.date))].sort((a, b) => b.localeCompare(a));
+        let pb = 0, cur = 0, prev = '';
+        allDates.forEach(d => {
+            if (!prev) { cur = 1; pb = 1; prev = d; return; }
+            const [y, m, dy] = prev.split('-').map(Number);
+            const dayBefore = new Date(Date.UTC(y, m - 1, dy));
+            dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+            if (d === dayBefore.toISOString().split('T')[0]) { cur++; pb = Math.max(pb, cur); } else { cur = 1; }
+            prev = d;
+        });
+        const currentStreak = _realData.streak;
+        if (currentStreak === 0) {
+            trendEls[3].className = 'card-trend neutral';
+            trendEls[3].innerHTML = '<i class="bi bi-dash-lg"></i> Start your streak!';
+        } else if (currentStreak >= pb) {
+            trendEls[3].className = 'card-trend purple';
+            trendEls[3].innerHTML = '<i class="bi bi-star-fill"></i> Personal best!';
+        } else {
+            const toGo = pb - currentStreak;
+            trendEls[3].className = 'card-trend neutral';
+            trendEls[3].innerHTML = `<i class="bi bi-dash-lg"></i> ${toGo} day${toGo > 1 ? 's' : ''} from best`;
+        }
+    }
+
     async function updateDashboard(uid) {
         try {
             const [actSnap, wSnap, chSnap, userDoc] = await Promise.all([
@@ -728,6 +811,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateWeightChart(weightLogs, profile);
             updateBodyMetrics(weightLogs, profile);
             updateHeroStats(logs, nutrition, goals, todayStr);
+            updateCardTrends(logs, calorieHistory, goals, nutrition);
         } catch (err) {
             console.error('Dashboard load error:', err);
         }
