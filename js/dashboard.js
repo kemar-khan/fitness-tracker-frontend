@@ -162,18 +162,21 @@ document.addEventListener('DOMContentLoaded', function () {
         ctx.stroke();
     }
 
-    let currentPct = 0;
-    const targetPct = 74;
     const ringEl = document.getElementById('ringPct');
-    function animateRing() {
-        if (currentPct < targetPct) {
-            currentPct = Math.min(currentPct + 1.5, targetPct);
-            drawProgressRing(currentPct);
-            if (ringEl) ringEl.textContent = Math.round(currentPct) + '%';
-            requestAnimationFrame(animateRing);
+    function animateRing(targetPct) {
+        let currentPct = 0;
+        function step() {
+            if (currentPct < targetPct) {
+                currentPct = Math.min(currentPct + 1.5, targetPct);
+                drawProgressRing(currentPct);
+                if (ringEl) ringEl.textContent = Math.round(currentPct) + '%';
+                requestAnimationFrame(step);
+            }
         }
+        drawProgressRing(0);
+        if (ringEl) ringEl.textContent = '0%';
+        if (targetPct > 0) step();
     }
-    animateRing();
 
     /* ── GOAL RINGS ───────────────────────────────────────────── */
     drawDonutRing('ringWorkouts', 80, LIME, '#1e1e1e', 100);
@@ -575,9 +578,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const activeDays = weekDates.filter(date => logs.some(l => l.date === date)).length;
         const progressPct = Math.round((activeDays / 7) * 100);
-        drawProgressRing(progressPct);
-        const ringPctEl = document.getElementById('ringPct');
-        if (ringPctEl) ringPctEl.textContent = progressPct + '%';
+        animateRing(progressPct);
     }
 
     /* ── REAL DATA STORE ──────────────────────────────────────── */
