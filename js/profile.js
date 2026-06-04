@@ -2,7 +2,7 @@
 //  For profile.html + profile-settings.html
 
 import { getAuth, onAuthStateChanged, signOut, deleteUser, GoogleAuthProvider, reauthenticateWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { ensureUserDocument, getStoredUid, loadUserProfile, saveUserProfile, loadPrivacySettings, savePrivacySettings, deleteUserDocument, submitFeedback, loadGoals, saveGoals, getWeightLogs, logWeight } from './firestore-data.js';
+import { ensureUserDocument, getStoredUid, loadUserProfile, saveUserProfile, loadPrivacySettings, savePrivacySettings, deleteUserDocument, submitFeedback, loadGoals, saveGoals, getWeightLogs, logWeight, loadPosts, savePost, deletePost } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', async function () {
     const isProfilePage  = !!document.getElementById('postsContainer');  // profile.html
@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!user) return;
         const uid = user.uid;
         const email = user.email;
+        _postsUid = uid;
         await ensureUserDocument(uid, { email });
         let userData = await loadUserProfile(uid);
         if (!userData.email) userData.email = email;
@@ -560,42 +561,33 @@ function previewImage(file) {
     reader.readAsDataURL(file);
 }
 
-// ── Posts Storage Helpers ─────────────────────────
-function getPosts() {
-    return JSON.parse(localStorage.getItem('fitpulsePosts')) || [
-        {
-            id: 'default1',
-            imageUrl: 'https://media.tenor.com/DJIzIsfhL4wAAAAe/skaddale-running-away.png',
-            caption: 'Just completed a 5km run today! Feeling amazing 💪',
-            date: 'April 28, 2026'
-        }
-    ];
-}
+// ── Posts — Firestore-backed ───────────────────────
+let _postsCache = [];
+let _postsUid   = null;
 
-function savePosts(posts) {
-    localStorage.setItem('fitpulsePosts', JSON.stringify(posts));
+async function refreshPosts() {
+    if (!_postsUid) return;
+    _postsCache = await loadPosts(_postsUid);
 }
 
 // ── Render All Posts ──────────────────────────────
-function renderPosts() {
+async function renderPosts() {
+    await refreshPosts();
     const container = document.getElementById('postsContainer');
-    const emptyMsg = document.getElementById('emptyPostsMsg');
-    const posts = getPosts();
-
+    const emptyMsg  = document.getElementById('emptyPostsMsg');
     if (!container) return;
     container.innerHTML = '';
 
-    if (posts.length === 0) {
+    if (_postsCache.length === 0) {
         if (emptyMsg) emptyMsg.style.display = 'block';
         return;
     }
     if (emptyMsg) emptyMsg.style.display = 'none';
 
-    posts.forEach(function (post) {
+    _postsCache.forEach(function (post) {
         const card = document.createElement('div');
         card.className = 'post-card';
         card.dataset.id = post.id;
-
         card.innerHTML = `
             ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" alt="Post image" />` : ''}
             <div class="post-content">
@@ -614,8 +606,7 @@ function renderPosts() {
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
         container.appendChild(card);
     });
 }
@@ -667,7 +658,7 @@ function closePostModal() {
     document.body.style.overflow = '';
 }
 
-function submitPost() {
+async function submitPost() {
     const caption = document.getElementById('postCaption').value.trim();
     const imagePreview = document.getElementById('imagePreview');
 
@@ -676,17 +667,15 @@ function submitPost() {
         return;
     }
 
-    const posts = getPosts();
     const newPost = {
-        id: 'post_' + Date.now(),
         imageUrl: imagePreview.style.display !== 'none' ? imagePreview.src : null,
         caption: caption || '',
-        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+        timestamp: new Date().toISOString()
     };
 
-    posts.unshift(newPost); // newest first
-    savePosts(posts);
-    renderPosts();
+    await savePost(_postsUid, newPost);
+    await renderPosts();
     closePostModal();
     showToast('Post shared!');
 }
@@ -696,8 +685,7 @@ let currentEditId = null;
 
 function openEditModal(postId) {
     currentEditId = postId;
-    const posts = getPosts();
-    const post = posts.find(function (p) { return p.id === postId; });
+    const post = _postsCache.find(function (p) { return p.id === postId; });
     if (!post) return;
     document.getElementById('editCaption').value = post.caption;
     document.getElementById('editModalOverlay').classList.add('open');
@@ -710,18 +698,16 @@ function closeEditModal() {
     currentEditId = null;
 }
 
-function saveEdit() {
+async function saveEdit() {
     const newCaption = document.getElementById('editCaption').value.trim();
     if (!newCaption) {
         showToast('Caption cannot be empty.', 'error');
         return;
     }
-    const posts = getPosts();
-    const idx = posts.findIndex(function (p) { return p.id === currentEditId; });
-    if (idx !== -1) {
-        posts[idx].caption = newCaption;
-        savePosts(posts);
-        renderPosts();
+    const post = _postsCache.find(function (p) { return p.id === currentEditId; });
+    if (post) {
+        await savePost(_postsUid, { ...post, caption: newCaption });
+        await renderPosts();
     }
     closeEditModal();
     showToast('Post updated!');
@@ -742,11 +728,9 @@ function closeDeleteModal() {
     currentDeleteId = null;
 }
 
-function confirmDeletePost() {
-    let posts = getPosts();
-    posts = posts.filter(function (p) { return p.id !== currentDeleteId; });
-    savePosts(posts);
-    renderPosts();
+async function confirmDeletePost() {
+    await deletePost(_postsUid, currentDeleteId);
+    await renderPosts();
     closeDeleteModal();
     showToast('Post deleted.');
 }

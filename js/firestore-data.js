@@ -6,6 +6,7 @@ import {
     updateDoc,
     getDocs,
     deleteDoc,
+    addDoc,
     collection,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -176,6 +177,30 @@ export async function saveNutritionState(uid, nutritionState) {
         nutrition: nutritionState,
         updatedAt: serverTimestamp()
     }, { merge: true });
+}
+
+export async function loadPosts(uid) {
+    if (!uid) return [];
+    const snap = await getDocs(collection(db, 'users', uid, 'posts'));
+    return snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+}
+
+export async function savePost(uid, post) {
+    if (!uid) return null;
+    const { id, ...data } = post;
+    if (id) {
+        await setDoc(doc(db, 'users', uid, 'posts', id), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+        return id;
+    }
+    const ref = await addDoc(collection(db, 'users', uid, 'posts'), { ...data, updatedAt: serverTimestamp() });
+    return ref.id;
+}
+
+export async function deletePost(uid, postId) {
+    if (!uid || !postId) return;
+    await deleteDoc(doc(db, 'users', uid, 'posts', postId));
 }
 
 function calorieHistoryDocRef(uid, dateKey) {

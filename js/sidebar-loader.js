@@ -1,35 +1,35 @@
+import { auth } from './firebase-config.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { loadUserProfile } from './firestore-data.js';
+
 document.addEventListener("DOMContentLoaded", function () {
     const placeholder = document.getElementById("sidebar-placeholder");
+    if (!placeholder) return;
 
-    if (placeholder) {
-        fetch("sidebar.html")
-            .then(response => response.text())
-            .then(data => {
-                placeholder.innerHTML = data;
+    fetch("sidebar.html")
+        .then(r => r.text())
+        .then(html => {
+            placeholder.innerHTML = html;
 
-                // 1. Highlight the current active page in the sidebar
-                const currentPage = window.location.pathname.split("/").pop();
-                const navLinks = document.querySelectorAll(".nav-item");
-                navLinks.forEach(link => {
-                    if (link.getAttribute("href") === currentPage) {
-                        link.classList.add("active");
-                    } else {
-                        link.classList.remove("active");
-                    }
-                });
-
-                // 2. Set the name from localStorage immediately after loading
-                updateSidebarName();
-                document.dispatchEvent(new CustomEvent('sidebarLoaded'));
+            // Highlight active page
+            const currentPage = window.location.pathname.split("/").pop();
+            document.querySelectorAll(".nav-item").forEach(link => {
+                link.classList.toggle("active", link.getAttribute("href") === currentPage);
             });
-    }
-});
 
-// Function to update the sidebar name from localStorage
-function updateSidebarName() {
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    const sidebarNameEl = document.getElementById('sidebar-user-name');
-    if (userData && userData.fullName && sidebarNameEl) {
-        sidebarNameEl.textContent = userData.fullName;
-    }
-}
+            // Load user name from Firestore
+            onAuthStateChanged(auth, async (user) => {
+                const nameEl = document.getElementById('sidebar-user-name');
+                if (!nameEl) return;
+                if (!user) { nameEl.textContent = 'Guest User'; return; }
+                try {
+                    const profile = await loadUserProfile(user.uid);
+                    nameEl.textContent = (profile && profile.fullName) ? profile.fullName : (user.displayName || 'FitPulse Member');
+                } catch (_) {
+                    nameEl.textContent = user.displayName || 'FitPulse Member';
+                }
+            });
+
+            document.dispatchEvent(new CustomEvent('sidebarLoaded'));
+        });
+});
