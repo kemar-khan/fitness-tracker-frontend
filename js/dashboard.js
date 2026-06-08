@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return "No activity logged yet. Head to Workouts and log your first session to get personalised insights!";
         }
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const workouts = logs.filter(l => (l.category || l.type) === 'Workout');
+        const workouts = logs.filter(l => l.date);
         const dayCounts = Array(7).fill(0);
         workouts.forEach(w => { if (w.date) dayCounts[new Date(w.date).getDay()]++; });
         const bestDay = dayNames[dayCounts.indexOf(Math.max(...dayCounts))];
@@ -511,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function calcStreak(logs) {
         const dates = [...new Set(
             logs
-                .filter(l => (l.category || l.type) === 'Workout' && l.date)
+                .filter(l => l.date)
                 .map(l => l.date)
         )].sort((a, b) => b.localeCompare(a));
         if (dates.length === 0) return 0;
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateGoalRings(logs) {
         const weekDates = getWeekDates();
         const weekLogs = logs.filter(l => weekDates.includes(l.date));
-        const workoutsThisWeek = weekLogs.filter(l => (l.category || l.type) === 'Workout').length;
+        const workoutsThisWeek = weekLogs.filter(l => l.date).length;
         const workoutGoal = 5;
         const workoutPct = Math.min(Math.round((workoutsThisWeek / workoutGoal) * 100), 100);
         const stepGoalDays = weekDates.filter(date => {
@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 if ((goals.weeklyWorkouts || 0) > 0) {
                     const wkDates = getWeekDates();
-                    const wkWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && wkDates.includes(l.date)).length;
+                    const wkWorkouts = logs.filter(l => wkDates.includes(l.date)).length;
                     total++; if (wkWorkouts >= goals.weeklyWorkouts) met++;
                 }
                 val.textContent = total > 0 ? `${met} / ${total}` : '— / —';
@@ -687,8 +687,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (trendEls.length < 4) return;
 
         // 1. Total Workouts vs last month
-        const thisMonthWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && l.date >= thisMonthStart).length;
-        const lastMonthWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && l.date >= lastMonthStart && l.date <= lastMonthEnd).length;
+        const thisMonthWorkouts = logs.filter(l => l.date >= thisMonthStart).length;
+        const lastMonthWorkouts = logs.filter(l => l.date >= lastMonthStart && l.date <= lastMonthEnd).length;
         const workoutDiff = thisMonthWorkouts - lastMonthWorkouts;
         const wIcon = workoutDiff >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
         const wCls  = workoutDiff > 0 ? 'up' : workoutDiff < 0 ? 'down' : 'neutral';
@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const weekDates = getWeekDates();
             const todayStr = new Date().toISOString().split('T')[0];
 
-            const workoutsCount = logs.filter(l => (l.category || l.type) === 'Workout').length;
+            const workoutsCount = logs.filter(l => l.date).length;
             const allSteps = logs.map(l => parseInt(l.steps) || 0).filter(s => s > 0);
             const avgSteps = allSteps.length > 0 ? Math.round(allSteps.reduce((a, b) => a + b, 0) / allSteps.length) : 0;
             const streak = calcStreak(logs);
@@ -841,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function buildWorkoutsModal() {
         const { logs, weekDates } = _realData;
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const workouts = logs.filter(l => (l.category || l.type) === 'Workout');
+        const workouts = logs.filter(l => l.date);
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
         const weekWorkouts = workouts.filter(w => weekDates.includes(w.date)).length;
@@ -960,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const activeDays = weekDates.filter(d => logs.some(l => l.date === d)).length;
         const progressPct = Math.round((activeDays / 7) * 100);
-        const weekWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && weekDates.includes(l.date)).length;
+        const weekWorkouts = logs.filter(l => weekDates.includes(l.date)).length;
         const dayRows = weekDates.map(d => {
             const dl = logs.filter(l => l.date === d);
             const dn = dayNames[new Date(d).getDay()];
@@ -1080,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const { logs, weekDates, goals } = _realData;
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const workoutGoal = (goals && goals.weeklyWorkouts) || 5;
-        const weekWorkouts = logs.filter(l => (l.category || l.type) === 'Workout' && weekDates.includes(l.date));
+        const weekWorkouts = logs.filter(l => weekDates.includes(l.date));
         const completed = weekWorkouts.length;
         const pct = Math.min(Math.round((completed / workoutGoal) * 100), 100);
         const sessions = weekWorkouts.sort((a, b) => a.date.localeCompare(b.date)).map(w => {
