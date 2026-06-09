@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const auth = getAuth();
 
     onAuthStateChanged(auth, async (user) => {
-        if (!user) { window.location.href = 'index.html'; return; }
+        if (!user) { window.location.href = 'login.html'; return; }
         const uid = user.uid;
 
         let profile = await loadUserProfile(uid) || {};

@@ -18,17 +18,25 @@ async function logoutUser() {
     console.log("Logging out...");
     localStorage.clear(); 
     await signOut(auth);
-    window.location.href = "index.html"; 
+    window.location.href = "index.html"; // redirect to landing page after logout
 }
 
 // --- SESSION CHECK ---
 
+// Helper: matches a page by both its .html path and the bare path the `serve` package uses.
+// e.g. "login" matches both "/login" and "/login.html"
+function isPage(path, name) {
+    return path === '/' + name || path.endsWith('/' + name + '.html') || path === name || path.endsWith('/' + name);
+}
+
 function checkSession() {
     const path = window.location.pathname;
-    // Improved detection: treats "/", "/index.html", and empty strings as Login Page
-    const isLoginPage = path === "/" || path.endsWith("index.html") || path === "";
+    const isLoginPage = isPage(path, 'login');
+    const isRegisterPage = isPage(path, 'register');
+    const isLandingPage = path === '/' || path === '' || isPage(path, 'index');
 
-    if (isLoginPage) return; // Stop if on login page
+    // Stop if on public landing, login, or register pages
+    if (isLoginPage || isRegisterPage || isLandingPage) return;
 
     const lastActivity = localStorage.getItem('lastActivity');
     if (!lastActivity) return;
@@ -55,12 +63,23 @@ setInterval(checkSession, 5000);
 // 3. Auth Guard (The Bouncer)
 onAuthStateChanged(auth, (user) => {
     const path = window.location.pathname;
-    const isLoginPage = path === "/" || path.endsWith("index.html") || path === "";
+    const isLoginPage = isPage(path, 'login');
+    const isRegisterPage = isPage(path, 'register');
+    const isLandingPage = path === '/' || path === '' || isPage(path, 'index');
+    // Auth pages = login or register (not the public landing page)
+    const isAuthPage = isLoginPage || isRegisterPage;
 
     if (user) {
-        if (isLoginPage) window.location.href = "dashboard.html";
+        // Redirect authenticated users away from auth pages to the dashboard.
+        // Do NOT redirect from the landing page — let them browse it freely.
+        if (isAuthPage) {
+            window.location.href = "dashboard.html";
+        }
     } else {
-        if (!isLoginPage) window.location.href = "index.html";
+        // Redirect unauthenticated users from protected pages to the login page
+        if (!isLoginPage && !isRegisterPage && !isLandingPage) {
+            window.location.href = "login.html";
+        }
     }
 });
 
@@ -75,7 +94,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Login Form (if on index.html)
+// Login Form (if on login.html)
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) {

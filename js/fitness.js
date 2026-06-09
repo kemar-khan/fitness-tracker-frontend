@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             if (user) {
                 resolve(user.uid);
             } else {
-                window.location.href = "index.html";
+                window.location.href = "login.html";
             }
         });
     });
