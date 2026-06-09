@@ -186,10 +186,27 @@ function listenToNotifications() {
     const ref = collection(db, "users", currentUserId, "notifications");
 
     onSnapshot(ref, (snapshot) => {
-        notifications = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        notifications = snapshot.docs.map(doc => {
+            const data = doc.data();
+            let displayTime = data.time;
+
+            if (data.createdAt && data.createdAt.toDate) {
+                const dateObj = data.createdAt.toDate();
+                displayTime = dateObj.toLocaleString('en-US', {
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric',
+                    hour: 'numeric', 
+                    minute: '2-digit'
+                });
+            }
+
+            return {
+                id: doc.id,
+                ...data,
+                time: displayTime
+            };
+        });
 
         // Sort newest first
         notifications.sort((a, b) => {
@@ -241,7 +258,6 @@ async function checkDueReminders() {
             reminder.time === currentTime
         ) {
 
-
             await addDoc(
                 collection(db, "users", currentUserId, "notifications"),
                 {
@@ -255,13 +271,36 @@ async function checkDueReminders() {
                 }
             );
 
+            let updateData = { updatedAt: serverTimestamp() };
+            
+            if (reminder.frequency === 'daily') {
+                const nextDate = new Date(now);
+                nextDate.setDate(nextDate.getDate() + 1);
+                updateData.date = nextDate.toLocaleDateString('en-CA');
+            } else if (reminder.frequency === 'weekdays') {
+                const nextDate = new Date(now);
+                let daysToAdd = 1;
+                if (nextDate.getDay() === 5) daysToAdd = 3; // Friday -> Monday
+                else if (nextDate.getDay() === 6) daysToAdd = 2; // Saturday -> Monday
+                nextDate.setDate(nextDate.getDate() + daysToAdd);
+                updateData.date = nextDate.toLocaleDateString('en-CA');
+            } else if (reminder.frequency === 'weekends') {
+                const nextDate = new Date(now);
+                let daysToAdd = 1;
+                if (nextDate.getDay() === 0) daysToAdd = 6; // Sunday -> Saturday
+                else if (nextDate.getDay() >= 1 && nextDate.getDay() <= 5) {
+                    daysToAdd = 6 - nextDate.getDay(); // Monday-Friday -> Saturday
+                }
+                nextDate.setDate(nextDate.getDate() + daysToAdd);
+                updateData.date = nextDate.toLocaleDateString('en-CA');
+            } else {
+                // 'One-Time' or anything else
+                updateData.triggered = true;
+            }
 
             await updateDoc(
                 doc(db, "users", currentUserId, "reminders", reminder.id),
-                {
-                    triggered: true,
-                    updatedAt: serverTimestamp()
-                }
+                updateData
             );
         }
     }

@@ -1,10 +1,21 @@
+<style>
+.badge {
+    background-color: #ff4444;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+</style>
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">FitPulse</div>
     <nav class="sidebar-nav">
         <a href="dashboard.html" class="nav-item" id="nav-dashboard"><i class="bi bi-grid-1x2"></i><span>Dashboard</span></a>
         <a href="fitness.html" class="nav-item" id="nav-fitness"><i class="bi bi-activity"></i><span>Workouts</span></a>
         <a href="nutrition.html" class="nav-item" id="nav-nutrition"><i class="bi bi-egg-fried"></i><span>Nutrition</span></a>
-        <a href="notifications.html" class="nav-item" id="nav-notifications"><i class="bi bi-bell-fill"></i><span>Alerts</span></a>
+        <a href="notifications.html" class="nav-item" id="nav-notifications"><i class="bi bi-bell-fill"></i><span>Alerts</span><span id="alerts-badge" class="badge" style="display: none;">0</span></a>
         <a href="profile.html" class="nav-item" id="nav-profile"><i class="bi bi-person"></i><span>Profile</span></a>
     </nav>
     <a href="profile.html" class="sidebar-user">

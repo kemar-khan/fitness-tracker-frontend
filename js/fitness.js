@@ -1,11 +1,14 @@
 'use strict';
 
 import { db, auth } from './firebase-config.js';
+import { loadGoals } from './firestore-data.js';
 
 import {
     collection,
     addDoc,
     getDocs,
+    getDoc,
+    setDoc,
     deleteDoc,
     updateDoc,
     doc,
@@ -18,6 +21,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import { ACTIVITY_TYPES, MET_VALUES, ACTIVITY_ICONS, ACTIVITY_EMOJIS, LEGACY_TYPE_MAP, STEPS_PLACEHOLDERS } from './activity-config.js';
+import { toast } from './toast.js';
 
 document.addEventListener('DOMContentLoaded', async function () {
     const uid = await new Promise((resolve) => {
@@ -43,6 +47,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     const cancelBtn = document.getElementById('cancelBtn');
 
     let logs = [];
+    let goalsData = await loadGoals(uid) || {
+    dailySteps: 0,
+    weeklyWorkouts: 0
+};
+let stepsGoalNotified = false;
 
     function getUserWeight() {
         const userData = JSON.parse(localStorage.getItem('userData')) || {};
@@ -119,7 +128,36 @@ document.addEventListener('DOMContentLoaded', async function () {
             updatedAt: serverTimestamp()
         });
     }
+    async function createDailyStepsGoalNotification(totalSteps) {
+    const today = new Date().toISOString().split('T')[0];
+    const achievementId = `dailySteps_${today}`;
 
+    const achievementRef = doc(db, "users", uid, "goalAchievements", achievementId);
+    const achievementSnap = await getDoc(achievementRef);
+
+    if (achievementSnap.exists()) {
+        return;
+    }
+
+    await createNotification(
+        uid,
+        "achievement",
+        "Daily Steps Goal Achieved",
+        `You have reached your daily steps goal of ${goalsData.dailySteps.toLocaleString()} steps.`
+    );
+    
+    if (typeof toast !== 'undefined') {
+        toast.success(`You've reached your daily steps goal!`);
+    }
+
+    await setDoc(achievementRef, {
+        type: "dailySteps",
+        date: today,
+        goal: goalsData.dailySteps,
+        actual: totalSteps,
+        createdAt: serverTimestamp()
+    });
+}
     async function getActivitiesFromFirestore(uid) {
         const snapshot = await getDocs(collection(db, "users", uid, "activities"));
 
@@ -128,13 +166,20 @@ document.addEventListener('DOMContentLoaded', async function () {
             ...docSnap.data()
         }));
     }
+    function isWorkoutActivity(type) {
+    if (!type) return false;
+
+    const normalizedType = type.toLowerCase();
+
+    return normalizedType !== 'steps' && normalizedType !== 'other';
+}
 
     function calculateWorkoutStreak(logs) {
         const workoutDates = [...new Set(
             logs
                 .filter(log => {
                     const type = log.type || log.category;
-                    return type && type.toLowerCase() === 'workout' && log.date;
+                    return isWorkoutActivity(type) && log.date;
                 })
                 .map(log => log.date)
         )].sort((a, b) => b.localeCompare(a));
@@ -193,7 +238,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         activityFeed.innerHTML = '';
 
-        const filteredLogs = applyFilters(logs);
+        const filteredLogs = applyFilters(logs).sort((a, b) => {
+            if (b.date !== a.date) return b.date.localeCompare(a.date);
+            return (b.time || '').localeCompare(a.time || '');
+        });
 
         if (filteredLogs.length === 0) {
             activityFeed.innerHTML = `
@@ -243,7 +291,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 
         const totalDuration = logs.reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-        const totalSteps = logs.reduce((sum, l) => sum + (parseInt(l.steps) || 0), 0);
+        const today = new Date().toISOString().split('T')[0];
+
+const totalSteps = logs
+    .filter(l => l.date === today)
+    .reduce((sum, l) => sum + (parseInt(l.steps) || 0), 0);
+
+if (goalsData.dailySteps > 0 && totalSteps >= goalsData.dailySteps) {
+    createDailyStepsGoalNotification(totalSteps);
+}
         const totalCalories = logs.reduce((sum, l) => sum + (parseInt(l.caloriesBurned) || 0), 0);
 
         // Cache total for dashboard to read
@@ -332,20 +388,24 @@ document.addEventListener('DOMContentLoaded', async function () {
                     }
                 );
 
-                if ((logData.category || logData.type)?.toLowerCase() === 'workout') {
+               if (isWorkoutActivity(logData.category || logData.type)) {
                     await createNotification(
                         uid,
                         'workout',
                         'Workout Logged',
                         `${logData.activityName} has been added successfully.`
                     );
+                    
+                    if (typeof toast !== 'undefined') {
+                        toast.success(`${logData.activityName} added successfully!`);
+                    }
 
                     const latestLogs = await getActivitiesFromFirestore(uid);
                     const streak = calculateWorkoutStreak(latestLogs);
 
                     console.log("Workout streak:", streak);
 
-                    if (streak >= 3) {
+                    if (streak >= 7) {
                         await createNotification(
                             uid,
                             'achievement',

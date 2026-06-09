@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 const workouts = document.getElementById('goalWorkouts');
                 if (cal) cal.textContent = `${goalsData.dailyCalories} kcal/day`;
                 if (steps) steps.textContent = `${goalsData.dailySteps.toLocaleString()} steps/day`;
-                if (water) water.textContent = `${goalsData.dailyWater} ml/day`;
+                if (water) water.textContent = `${goalsData.dailyWater} glass/day`;
                 if (workouts) workouts.textContent = `${goalsData.weeklyWorkouts} workouts/week`;
             }
             renderGoals();
