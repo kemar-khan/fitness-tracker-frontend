@@ -216,3 +216,21 @@ export async function saveCalorieHistoryDay(uid, dateKey, { consumed, goal }) {
         updatedAt: serverTimestamp()
     }, { merge: true });
 }
+
+// Centralized Calorie Target Storage Helpers
+export function saveCalorieTarget(target) {
+    const calorieVal = parseInt(target, 10);
+    if (!Number.isNaN(calorieVal)) {
+        localStorage.setItem('fitpulseCalorieTarget', calorieVal);
+        // Dispatch custom event to notify current window components
+        window.dispatchEvent(new CustomEvent('calorieTargetUpdated', {
+            detail: { calorieTarget: calorieVal }
+        }));
+    }
+}
+
+export function getCalorieTarget() {
+    const target = localStorage.getItem('fitpulseCalorieTarget');
+    return target ? parseInt(target, 10) : null;
+}
+

@@ -36,6 +36,11 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     /* ── HELPERS ──────────────────────────────────────────────── */
+    function getCalorieTarget() {
+        const target = localStorage.getItem('fitpulseCalorieTarget');
+        return target ? parseInt(target, 10) : null;
+    }
+
     function setStat(id, val) {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
@@ -466,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const protein   = meals.reduce((s, m) => s + (m.protein  || 0), 0);
         const carbs     = meals.reduce((s, m) => s + (m.carbs    || 0), 0);
         const fat       = meals.reduce((s, m) => s + (m.fat      || 0), 0);
-        const goal      = nutrition.dailyGoal || 2000;
+        const goal      = getCalorieTarget() || nutrition.dailyGoal || 2000;
         const pct       = Math.min(Math.round((consumed / goal) * 100), 100);
 
         setStat('summaryCalories', consumed.toLocaleString());
@@ -714,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // 3. Avg. Calories vs target
-        const calTarget = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const calTarget = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const thisMonthCalDays = calorieHistory.filter(h => h.date >= thisMonthStart && h.consumed > 0);
         if (!thisMonthCalDays.length) {
             trendEls[2].className = 'card-trend neutral';
@@ -908,7 +913,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const weekData = weekDates.map(d => { const h = calorieHistory.find(x => x.date === d); return h ? h.consumed : 0; });
         const daysWithData = weekData.filter(v => v > 0).length;
         const weekAvg = daysWithData ? Math.round(weekData.reduce((a, b) => a + b, 0) / daysWithData) : 0;
-        const target = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const target = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const dayRows = weekDates.map((d, i) => {
             const v = weekData[i]; const w = Math.min(Math.round((v / target) * 100), 100);
             return `<div class="modal-bar-item"><span class="modal-bar-label">${dayNames[i]}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${w}%;background:var(--lime)"></div></div><span class="modal-bar-value">${v > 0 ? v.toLocaleString() : '—'}</span></div>`;
@@ -988,7 +993,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const todayStr = new Date().toISOString().split('T')[0];
         const todayMeals = (nutrition && nutrition.trackedMeals || []).filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr));
         const consumed = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
-        const target = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const target = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const remaining = Math.max(0, target - consumed);
         const protein = todayMeals.reduce((s, m) => s + (m.protein || 0), 0);
         const carbs = todayMeals.reduce((s, m) => s + (m.carbs || 0), 0);
@@ -1122,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function buildGoalCaloriesModal() {
         const { calorieHistory, weekDates, goals, nutrition } = _realData;
         const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const calGoal = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const calGoal = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const weekData = weekDates.map(d => { const h = calorieHistory.find(x => x.date === d); return h ? h.consumed : 0; });
         const metDays = weekData.filter(c => c > 0 && c <= calGoal).length;
         const rows = weekDates.map((d, i) => {
@@ -1219,5 +1224,24 @@ document.addEventListener('DOMContentLoaded', function () {
     buildWeekStrip([]);
     onAuthStateChanged(auth, (user) => {
         if (user) updateDashboard(user.uid);
+    });
+
+    // Synchronization listeners for calorie target updates
+    window.addEventListener('calorieTargetUpdated', (e) => {
+        if (_realData.nutrition) {
+            updateCalorieUI(_realData.nutrition);
+            updateHeroStats(_realData.logs, _realData.nutrition, _realData.goals, new Date().toISOString().split('T')[0]);
+            updateCardTrends(_realData.logs, _realData.calorieHistory, _realData.goals, _realData.nutrition);
+        }
+    });
+
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'fitpulseCalorieTarget' && e.newValue) {
+            if (_realData.nutrition) {
+                updateCalorieUI(_realData.nutrition);
+                updateHeroStats(_realData.logs, _realData.nutrition, _realData.goals, new Date().toISOString().split('T')[0]);
+                updateCardTrends(_realData.logs, _realData.calorieHistory, _realData.goals, _realData.nutrition);
+            }
+        }
     });
 });

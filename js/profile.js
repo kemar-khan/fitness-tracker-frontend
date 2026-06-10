@@ -2,7 +2,7 @@
 //  For profile.html + profile-settings.html
 
 import { getAuth, onAuthStateChanged, signOut, deleteUser, GoogleAuthProvider, reauthenticateWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { ensureUserDocument, getStoredUid, loadUserProfile, saveUserProfile, loadPrivacySettings, savePrivacySettings, deleteUserDocument, submitFeedback, loadGoals, saveGoals, getWeightLogs, logWeight, loadPosts, savePost, deletePost } from './firestore-data.js';
+import { ensureUserDocument, getStoredUid, loadUserProfile, saveUserProfile, loadPrivacySettings, savePrivacySettings, deleteUserDocument, submitFeedback, loadGoals, saveGoals, getWeightLogs, logWeight, loadPosts, savePost, deletePost, saveCalorieTarget, getCalorieTarget } from './firestore-data.js';
 
 document.addEventListener('DOMContentLoaded', async function () {
     const isProfilePage  = !!document.getElementById('postsContainer');  // profile.html
@@ -140,7 +140,16 @@ document.addEventListener('DOMContentLoaded', async function () {
                 weeklyWorkouts: 0
             };
 
+            const initialCentralCal = getCalorieTarget();
+            if (initialCentralCal !== null) {
+                goalsData.dailyCalories = initialCentralCal;
+            }
+
             function renderGoals() {
+                const centralCal = getCalorieTarget();
+                if (centralCal !== null) {
+                    goalsData.dailyCalories = centralCal;
+                }
                 const cal = document.getElementById('goalCalories');
                 const steps = document.getElementById('goalSteps');
                 const water = document.getElementById('goalWater');
@@ -151,6 +160,25 @@ document.addEventListener('DOMContentLoaded', async function () {
                 if (workouts) workouts.textContent = `${goalsData.weeklyWorkouts} workouts/week`;
             }
             renderGoals();
+
+            // Synchronization listeners for calorie target updates
+            window.addEventListener('calorieTargetUpdated', (e) => {
+                const newTarget = parseInt(e.detail?.calorieTarget, 10);
+                if (!Number.isNaN(newTarget)) {
+                    goalsData.dailyCalories = newTarget;
+                    renderGoals();
+                }
+            });
+
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'fitpulseCalorieTarget' && e.newValue) {
+                    const newTarget = parseInt(e.newValue, 10);
+                    if (!Number.isNaN(newTarget)) {
+                        goalsData.dailyCalories = newTarget;
+                        renderGoals();
+                    }
+                }
+            });
 
             const editGoalsBtn = document.querySelector('.edit-goals-btn');
             if (editGoalsBtn) {
@@ -164,7 +192,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             }
 
             saveGoalsBtn.addEventListener('click', async function () {
-                goalsData.dailyCalories = +document.getElementById('inputCalories').value;
+                const newCal = +document.getElementById('inputCalories').value;
+                saveCalorieTarget(newCal);
+
+                goalsData.dailyCalories = newCal;
                 goalsData.dailySteps = +document.getElementById('inputSteps').value;
                 goalsData.dailyWater = +document.getElementById('inputWater').value;
                 goalsData.weeklyWorkouts = +document.getElementById('inputWorkouts').value;

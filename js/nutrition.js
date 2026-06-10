@@ -12,7 +12,7 @@ import {
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { loadNutritionState, saveNutritionState, saveCalorieHistoryDay } from './firestore-data.js';
+import { loadGoals, saveGoals, loadNutritionState, saveNutritionState, saveCalorieHistoryDay, saveCalorieTarget, getCalorieTarget } from './firestore-data.js';
 
 let nutritionAppStarted = false;
 
@@ -38,7 +38,7 @@ async function startNutritionApp(uid) {
     let favorites = [];
     let savedMeals = [];
     let trackedMeals = [];
-    let dailyGoal = 2500;
+    let dailyGoal = getCalorieTarget() || 2500;
     let calorieMetrics = null;
     let waterGlasses = 0;
     let waterDate = '';
@@ -103,7 +103,11 @@ async function startNutritionApp(uid) {
         trackedMeals = Array.isArray(state.trackedMeals) ? state.trackedMeals : [];
         favorites = Array.isArray(state.favorites) ? state.favorites : [];
         savedMeals = Array.isArray(state.savedMeals) ? state.savedMeals : [];
-        dailyGoal = Number.isFinite(state.dailyGoal) ? state.dailyGoal : 2500;
+        const storedGoal = getCalorieTarget();
+        dailyGoal = storedGoal !== null ? storedGoal : (Number.isFinite(state.dailyGoal) ? state.dailyGoal : 2500);
+        if (storedGoal === null) {
+            saveCalorieTarget(dailyGoal);
+        }
         calorieMetrics = state.calorieMetrics ?? null;
         waterGlasses = Number.isFinite(state.waterGlasses) ? state.waterGlasses : 0;
         waterDate = state.waterDate || '';
@@ -114,6 +118,9 @@ async function startNutritionApp(uid) {
         syncWaterForToday();
         const todayKey = getTodayKey();
         const consumed = getTodayConsumed();
+
+        // Save calorie target to centralized storage
+        saveCalorieTarget(dailyGoal);
 
         saveNutritionState(uid, {
             trackedMeals,
@@ -129,6 +136,23 @@ async function startNutritionApp(uid) {
 
         saveCalorieHistoryDay(uid, todayKey, { consumed, goal: dailyGoal }).catch((error) => {
             console.error('Unable to save calorie history to Firestore:', error);
+        });
+
+        // Sync to Firestore goals collection so Profile page is in sync on reload
+        loadGoals(uid).then((goalsData) => {
+            if (goalsData) {
+                goalsData.dailyCalories = dailyGoal;
+                saveGoals(uid, goalsData);
+            } else {
+                saveGoals(uid, {
+                    weeklyWorkouts: 0,
+                    dailySteps: 0,
+                    dailyCalories: dailyGoal,
+                    dailyWater: 0
+                });
+            }
+        }).catch((error) => {
+            console.error('Unable to sync goals with dailyGoal:', error);
         });
     }
     async function createNotification(uid, type, title, message) {
@@ -636,7 +660,7 @@ async function startNutritionApp(uid) {
             `${entry.name} has been added to your ${entry.category} plan with ${entry.calories} kcal.`
         );
 
-        const totalConsumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
+        const totalConsumed = getTodayConsumed();
 
         if (totalConsumed > dailyGoal) {
             showToast(`Calorie limit exceeded: ${totalConsumed} / ${dailyGoal} kcal`, "error");
@@ -967,6 +991,27 @@ async function startNutritionApp(uid) {
     } catch (error) {
         console.error('Unable to load nutrition state from Firestore:', error);
     }
+
+    // Synchronization listeners for calorie target updates
+    window.addEventListener('calorieTargetUpdated', (e) => {
+        const newTarget = parseInt(e.detail?.calorieTarget, 10);
+        if (!Number.isNaN(newTarget) && dailyGoal !== newTarget) {
+            dailyGoal = newTarget;
+            updateStats();
+            renderCalorieMetrics();
+        }
+    });
+
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'fitpulseCalorieTarget' && e.newValue) {
+            const newTarget = parseInt(e.newValue, 10);
+            if (!Number.isNaN(newTarget) && dailyGoal !== newTarget) {
+                dailyGoal = newTarget;
+                updateStats();
+                renderCalorieMetrics();
+            }
+        }
+    });
 
     startDayRolloverWatcher();
     refreshUI();
