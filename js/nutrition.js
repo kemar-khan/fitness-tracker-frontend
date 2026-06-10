@@ -636,7 +636,7 @@ async function startNutritionApp(uid) {
             `${entry.name} has been added to your ${entry.category} plan with ${entry.calories} kcal.`
         );
 
-        const totalConsumed = trackedMeals.reduce((sum, m) => sum + m.calories, 0);
+        const totalConsumed = getTodayConsumed();
 
         if (totalConsumed > dailyGoal) {
             showToast(`Calorie limit exceeded: ${totalConsumed} / ${dailyGoal} kcal`, "error");
