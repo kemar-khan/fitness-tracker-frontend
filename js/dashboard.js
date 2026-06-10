@@ -36,11 +36,6 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     /* ── HELPERS ──────────────────────────────────────────────── */
-    function getCalorieTarget() {
-        const target = localStorage.getItem('fitpulseCalorieTarget');
-        return target ? parseInt(target, 10) : null;
-    }
-
     function setStat(id, val) {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
@@ -185,8 +180,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* ── GOAL RINGS ───────────────────────────────────────────── */
     drawDonutRing('ringWorkouts', 80, LIME, '#1e1e1e', 100);
-    drawDonutRing('ringSteps',    58, BLUE, '#1e1e1e', 100);
-    drawDonutRing('ringCalories',  0, AMBER, '#1e1e1e', 100);
+    drawDonutRing('ringSteps', 58, BLUE, '#1e1e1e', 100);
+    drawDonutRing('ringCalories', 0, AMBER, '#1e1e1e', 100);
 
     /* ── COMBINED ACTIVITY + STEPS CHART (weekly) ────────────── */
     const comboLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -467,12 +462,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const todayStr = new Date().toISOString().split('T')[0];
         const meals = (nutrition.trackedMeals || []).filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr));
 
-        const consumed  = meals.reduce((s, m) => s + (m.calories || 0), 0);
-        const protein   = meals.reduce((s, m) => s + (m.protein  || 0), 0);
-        const carbs     = meals.reduce((s, m) => s + (m.carbs    || 0), 0);
-        const fat       = meals.reduce((s, m) => s + (m.fat      || 0), 0);
-        const goal      = getCalorieTarget() || nutrition.dailyGoal || 2000;
-        const pct       = Math.min(Math.round((consumed / goal) * 100), 100);
+        const consumed = meals.reduce((s, m) => s + (m.calories || 0), 0);
+        const protein = meals.reduce((s, m) => s + (m.protein || 0), 0);
+        const carbs = meals.reduce((s, m) => s + (m.carbs || 0), 0);
+        const fat = meals.reduce((s, m) => s + (m.fat || 0), 0);
+        const goal = nutrition.dailyGoal || 2000;
+        const pct = Math.min(Math.round((consumed / goal) * 100), 100);
 
         setStat('summaryCalories', consumed.toLocaleString());
 
@@ -490,18 +485,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const macroGoals = { carbs: Math.round(goal * 0.50 / 4), fat: Math.round(goal * 0.25 / 9), protein: Math.round(goal * 0.25 / 4) };
         const macroItems = document.querySelectorAll('.macro-item');
-        const macroMap   = [
-            { label: 'Carbs',   val: carbs,   goal: macroGoals.carbs,   color: '#B4D400' },
-            { label: 'Fat',     val: fat,     goal: macroGoals.fat,     color: '#F87171' },
+        const macroMap = [
+            { label: 'Carbs', val: carbs, goal: macroGoals.carbs, color: '#B4D400' },
+            { label: 'Fat', val: fat, goal: macroGoals.fat, color: '#F87171' },
             { label: 'Protein', val: protein, goal: macroGoals.protein, color: '#38BDF8' },
         ];
         macroItems.forEach((item, i) => {
             if (!macroMap[i]) return;
             const { val, goal: g, color } = macroMap[i];
             const w = Math.min(Math.round((val / g) * 100), 100);
-            const bar  = item.querySelector('.macro-bar');
+            const bar = item.querySelector('.macro-bar');
             const nums = item.querySelector('.macro-nums');
-            if (bar)  bar.style.setProperty('--w', w + '%');
+            if (bar) bar.style.setProperty('--w', w + '%');
             if (nums) nums.innerHTML = `<span style="color:${color}">${val}g</span> / ${g}g`;
         });
 
@@ -696,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const lastMonthWorkouts = logs.filter(l => l.date >= lastMonthStart && l.date <= lastMonthEnd).length;
         const workoutDiff = thisMonthWorkouts - lastMonthWorkouts;
         const wIcon = workoutDiff >= 0 ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
-        const wCls  = workoutDiff > 0 ? 'up' : workoutDiff < 0 ? 'down' : 'neutral';
+        const wCls = workoutDiff > 0 ? 'up' : workoutDiff < 0 ? 'down' : 'neutral';
         const wText = workoutDiff === 0 ? 'Same as last month' : `${workoutDiff > 0 ? '+' : ''}${workoutDiff} vs last month`;
         trendEls[0].className = `card-trend ${wCls}`;
         trendEls[0].innerHTML = `<i class="bi ${wIcon}"></i> ${wText}`;
@@ -719,7 +714,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // 3. Avg. Calories vs target
-        const calTarget = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const calTarget = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const thisMonthCalDays = calorieHistory.filter(h => h.date >= thisMonthStart && h.consumed > 0);
         if (!thisMonthCalDays.length) {
             trendEls[2].className = 'card-trend neutral';
@@ -824,13 +819,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ── MODAL SYSTEM ────────────────────────────────────────────  */
-    const overlay    = document.getElementById('modalOverlay');
+    const overlay = document.getElementById('modalOverlay');
     const modalTitle = document.getElementById('modalTitle');
-    const modalBody  = document.getElementById('modalBody');
+    const modalBody = document.getElementById('modalBody');
 
     function openModal(title, bodyHTML) {
         modalTitle.textContent = title;
-        modalBody.innerHTML    = bodyHTML;
+        modalBody.innerHTML = bodyHTML;
         overlay.classList.add('open');
         document.body.style.overflow = 'hidden';
     }
@@ -866,7 +861,8 @@ document.addEventListener('DOMContentLoaded', function () {
             .map(([t, c]) => { const p = Math.round((c / total) * 100); return `<div class="modal-bar-item"><span class="modal-bar-label">${t}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${p}%;background:var(--lime)"></div></div><span class="modal-bar-value">${p}%</span></div>`; }).join('');
         const recent = workouts.filter(w => w.date).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4)
             .map(w => { const d = new Date(w.date); return `<div class="modal-list-item"><span class="modal-list-label">${dayNames[d.getDay()]} — ${w.category || w.type || 'Workout'}</span><span class="modal-list-value accent">${w.duration || '—'} min</span></div>`; }).join('');
-        return { title: 'Total Workouts', body: `
+        return {
+            title: 'Total Workouts', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${weekWorkouts}</div><div class="modal-stat-label">This Week</div></div>
                 <div class="modal-stat"><div class="modal-stat-val">${monthWorkouts}</div><div class="modal-stat-label">This Month</div></div>
@@ -892,7 +888,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return `<div class="modal-bar-item"><span class="modal-bar-label">${dayNames[i]}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${w}%;background:${met ? 'var(--lime)' : 'rgba(180,212,0,0.4)'}"></div></div><span class="modal-bar-value">${s > 0 ? s.toLocaleString() : '—'}</span></div>`;
         }).join('');
         const goalMetDays = weekSteps.filter(s => s >= stepGoal).length;
-        return { title: 'Avg. Daily Steps', body: `
+        return {
+            title: 'Avg. Daily Steps', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${todaySteps > 0 ? todaySteps.toLocaleString() : '—'}</div><div class="modal-stat-label">Today</div></div>
                 <div class="modal-stat"><div class="modal-stat-val">${weekAvg > 0 ? weekAvg.toLocaleString() : '—'}</div><div class="modal-stat-label">Weekly Avg</div></div>
@@ -913,12 +910,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const weekData = weekDates.map(d => { const h = calorieHistory.find(x => x.date === d); return h ? h.consumed : 0; });
         const daysWithData = weekData.filter(v => v > 0).length;
         const weekAvg = daysWithData ? Math.round(weekData.reduce((a, b) => a + b, 0) / daysWithData) : 0;
-        const target = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const target = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const dayRows = weekDates.map((d, i) => {
             const v = weekData[i]; const w = Math.min(Math.round((v / target) * 100), 100);
             return `<div class="modal-bar-item"><span class="modal-bar-label">${dayNames[i]}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${w}%;background:var(--lime)"></div></div><span class="modal-bar-value">${v > 0 ? v.toLocaleString() : '—'}</span></div>`;
         }).join('');
-        return { title: 'Avg. Calories / Day', body: `
+        return {
+            title: 'Avg. Calories / Day', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${todayConsumed > 0 ? todayConsumed.toLocaleString() : '—'}</div><div class="modal-stat-label">Today</div></div>
                 <div class="modal-stat"><div class="modal-stat-val">${weekAvg > 0 ? weekAvg.toLocaleString() : '—'}</div><div class="modal-stat-label">Weekly Avg</div></div>
@@ -950,7 +948,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return `<div class="modal-list-item"><span class="modal-list-label">${icons[m]} ${m}-Day Streak</span><span class="modal-list-value" style="color:${reached ? '#A78BFA' : 'var(--text-muted)'}">${reached ? 'Unlocked' : 'Locked'}</span></div>`;
         }).join('');
         const nextMilestone = milestones.find(m => m > streak);
-        return { title: 'Active Streak', body: `
+        return {
+            title: 'Active Streak', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${streak}</div><div class="modal-stat-label">Current Streak</div></div>
                 <div class="modal-stat"><div class="modal-stat-val" style="color:#A78BFA">${pb}</div><div class="modal-stat-label">Personal Best</div></div>
@@ -978,7 +977,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 <span>${active ? '✅' : '—'}</span>
             </div>`;
         }).join('');
-        return { title: 'Weekly Progress', body: `
+        return {
+            title: 'Weekly Progress', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${progressPct}%</div><div class="modal-stat-label">Complete</div></div>
                 <div class="modal-stat"><div class="modal-stat-val">${activeDays}</div><div class="modal-stat-label">Active Days</div></div>
@@ -993,7 +993,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const todayStr = new Date().toISOString().split('T')[0];
         const todayMeals = (nutrition && nutrition.trackedMeals || []).filter(m => m.trackedAt && m.trackedAt.startsWith(todayStr));
         const consumed = todayMeals.reduce((s, m) => s + (m.calories || 0), 0);
-        const target = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const target = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const remaining = Math.max(0, target - consumed);
         const protein = todayMeals.reduce((s, m) => s + (m.protein || 0), 0);
         const carbs = todayMeals.reduce((s, m) => s + (m.carbs || 0), 0);
@@ -1007,7 +1007,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const pct = cals > 0 ? Math.min(Math.round((cals / target) * 100), 100) : 0;
             return `<div class="modal-bar-item"><span class="modal-bar-label">${cat}</span><div class="modal-bar-track"><div class="modal-bar-fill" style="width:${pct}%;background:${catColors[cat]}"></div></div><span class="modal-bar-value">${cals > 0 ? cals + ' kcal' : '—'}</span></div>`;
         }).join('');
-        return { title: 'Daily Calories Detail', body: `
+        return {
+            title: 'Daily Calories Detail', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${consumed.toLocaleString()}</div><div class="modal-stat-label">Consumed</div></div>
                 <div class="modal-stat"><div class="modal-stat-val">${target.toLocaleString()}</div><div class="modal-stat-label">Target</div></div>
@@ -1039,7 +1040,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             </div>`;
         }).join('');
-        return { title: 'Activity Duration & Steps', body: `
+        return {
+            title: 'Activity Duration & Steps', body: `
             <div class="modal-section-title">This Week's Breakdown</div>
             <div class="modal-list">${rows}</div>
             <div class="modal-stat-row">
@@ -1070,7 +1072,8 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>`;
         }).join('');
         const weekNet = totalBurned - totalConsumed;
-        return { title: 'Calorie Balance', body: `
+        return {
+            title: 'Calorie Balance', body: `
             <div class="modal-section-title">Consumed vs Burned This Week</div>
             <div class="modal-list">${rows}</div>
             <div class="modal-stat-row">
@@ -1093,7 +1096,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return `<div class="modal-list-item"><span class="modal-list-label">${dayNames[d.getDay()]} — ${w.category || w.type || 'Workout'}</span><span class="modal-list-value accent">${w.duration || '—'} min ✅</span></div>`;
         }).join('');
         const remaining = Math.max(0, workoutGoal - completed);
-        return { title: 'Workouts Goal', body: `
+        return {
+            title: 'Workouts Goal', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${completed}</div><div class="modal-stat-label">Completed</div></div>
                 <div class="modal-stat"><div class="modal-stat-val">${workoutGoal}</div><div class="modal-stat-label">Goal</div></div>
@@ -1114,7 +1118,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const s = weekSteps[i]; const met = s >= stepGoal;
             return `<div class="modal-list-item"><span class="modal-list-label" style="color:var(--text)">${dayNames[i]}</span><span class="modal-list-value ${met ? 'accent' : ''}">${s > 0 ? s.toLocaleString() + ' steps' : '—'} ${s > 0 ? (met ? '✅' : '❌') : ''}</span></div>`;
         }).join('');
-        return { title: 'Step Goal', body: `
+        return {
+            title: 'Step Goal', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${metDays}</div><div class="modal-stat-label">Days Met</div></div>
                 <div class="modal-stat"><div class="modal-stat-val" style="color:#38BDF8">${(stepGoal / 1000).toFixed(0)}k</div><div class="modal-stat-label">Daily Goal</div></div>
@@ -1127,14 +1132,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function buildGoalCaloriesModal() {
         const { calorieHistory, weekDates, goals, nutrition } = _realData;
         const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const calGoal = getCalorieTarget() || (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
+        const calGoal = (goals && goals.dailyCalories) || (nutrition && nutrition.dailyGoal) || 2000;
         const weekData = weekDates.map(d => { const h = calorieHistory.find(x => x.date === d); return h ? h.consumed : 0; });
         const metDays = weekData.filter(c => c > 0 && c <= calGoal).length;
         const rows = weekDates.map((d, i) => {
             const c = weekData[i]; const met = c > 0 && c <= calGoal;
             return `<div class="modal-list-item"><span class="modal-list-label" style="color:var(--text)">${dayNames[i]}</span><span class="modal-list-value ${met ? 'accent' : ''}">${c > 0 ? c.toLocaleString() + ' kcal' : '—'} ${c > 0 ? (met ? '✅' : '❌') : ''}</span></div>`;
         }).join('');
-        return { title: 'Calorie Target', body: `
+        return {
+            title: 'Calorie Target', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${metDays}</div><div class="modal-stat-label">Days Met</div></div>
                 <div class="modal-stat"><div class="modal-stat-val" style="color:#F59E0B">${calGoal.toLocaleString()}</div><div class="modal-stat-label">Daily Target</div></div>
@@ -1160,7 +1166,8 @@ document.addEventListener('DOMContentLoaded', function () {
             else { bmiLabel = 'Obese'; bmiColor = '#F87171'; }
         }
         const recentRows = sorted.slice(-5).reverse().map(l => `<div class="modal-list-item"><span class="modal-list-label">${l.date}</span><span class="modal-list-value accent">${l.weight} kg</span></div>`).join('');
-        return { title: 'Body Metrics', body: `
+        return {
+            title: 'Body Metrics', body: `
             <div class="modal-stat-row">
                 <div class="modal-stat"><div class="modal-stat-val">${currentWeight || '—'}</div><div class="modal-stat-label">Current (kg)</div></div>
                 <div class="modal-stat"><div class="modal-stat-val" style="color:var(--lime)">${lost}</div><div class="modal-stat-label">Lost (kg)</div></div>
@@ -1224,24 +1231,5 @@ document.addEventListener('DOMContentLoaded', function () {
     buildWeekStrip([]);
     onAuthStateChanged(auth, (user) => {
         if (user) updateDashboard(user.uid);
-    });
-
-    // Synchronization listeners for calorie target updates
-    window.addEventListener('calorieTargetUpdated', (e) => {
-        if (_realData.nutrition) {
-            updateCalorieUI(_realData.nutrition);
-            updateHeroStats(_realData.logs, _realData.nutrition, _realData.goals, new Date().toISOString().split('T')[0]);
-            updateCardTrends(_realData.logs, _realData.calorieHistory, _realData.goals, _realData.nutrition);
-        }
-    });
-
-    window.addEventListener('storage', (e) => {
-        if (e.key === 'fitpulseCalorieTarget' && e.newValue) {
-            if (_realData.nutrition) {
-                updateCalorieUI(_realData.nutrition);
-                updateHeroStats(_realData.logs, _realData.nutrition, _realData.goals, new Date().toISOString().split('T')[0]);
-                updateCardTrends(_realData.logs, _realData.calorieHistory, _realData.goals, _realData.nutrition);
-            }
-        }
     });
 });
